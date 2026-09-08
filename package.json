@@ -4,7 +4,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "npx electron-builder --win"
+    "build": "npx electron-builder --win -c.mac.identity=null --publish never"
   },
   "devDependencies": {
     "electron": "^31.0.0",
