@@ -11,7 +11,7 @@ function createWindow () {
   });
 
   // 🔴 यहाँ 'yourusername' और 'your-repo' की जगह अपना असली GitHub Pages लिंक डालें
-  mainWindow.loadURL('https://github.io');
+  mainWindow.loadURL('https://ydvaditya20-creator.github.io/Exe-hellow-wirld/');
 }
 
 app.whenReady().then(createWindow);
