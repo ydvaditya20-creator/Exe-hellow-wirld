@@ -470,23 +470,35 @@ function renderParticulars() {
         container.innerHTML += `<div class="selected-item-row"><span>• ${item}</span><button class="delete-item-btn" onclick="removeParticular(${index})">×</button></div>`;
     });
 }
-
-// खाते जोड़ना (Cash, JV Debit, JV Credit)
-function addAccountItem(type) {
-    if (type === 'cash') {
-        const select = document.getElementById('vHeadSelectCash');
-        if (select.value && !cashAccounts.includes(select.value)) { cashAccounts.push(select.value); renderCashAccounts(); }
-        select.value = "";
-    } else if (type === 'jv_dr') {
-        const select = document.getElementById('vHeadSelectJV1');
-        if (select.value && !jvDebitAccounts.includes(select.value)) { jvDebitAccounts.push(select.value); renderJVAccounts(1); }
-        select.value = "";
-    } else if (type === 'jv_cr') {
-        const select = document.getElementById('vHeadSelectJV2');
-        if (select.value && !jvCreditAccounts.includes(select.value)) { jvCreditAccounts.push(select.value); renderJVAccounts(2); }
-        select.value = "";
+    // कीबोर्ड पर Enter दबाते ही कस्टम लिखा हुआ खाता नीचे जुड़ जाएगा
+window.handleHeadEnter = function(e, type) {
+    if (e.key === 'Enter') {
+        addAccountItem(type);
     }
 }
+
+// सुधरा हुआ अकाउंट आइटम जोड़ने का फंक्शन (अब यह इनपुट बॉक्स से वैल्यू उठाएगा)
+function addAccountItem(type) {
+    if (type === 'cash') {
+        const input = document.getElementById('vHeadSelectCash');
+        const val = input.value.trim();
+        if (val && !cashAccounts.includes(val)) { cashAccounts.push(val); renderCashAccounts(); }
+        input.value = "";
+    } else if (type === 'jv_dr') {
+        const input = document.getElementById('vHeadSelectJV1');
+        const val = input.value.trim();
+        if (val && !jvDebitAccounts.includes(val)) { jvDebitAccounts.push(val); renderJVAccounts(1); }
+        input.value = "";
+    } else if (type === 'jv_cr') {
+        const input = document.getElementById('vHeadSelectJV2');
+        const val = input.value.trim();
+        if (val && !jvCreditAccounts.includes(val)) { jvCreditAccounts.push(val); renderJVAccounts(2); }
+        input.value = "";
+    }
+}
+
+
+
 
 window.removeAccountNode = function(type, index) {
     if (type === 'cash') { cashAccounts.splice(index, 1); renderCashAccounts(); }
