@@ -378,23 +378,29 @@
 </div>
 <script>
 
-// कॉन्स्टेंट ऑप्शंस
-const PARTICULARS_OPTIONS = [
-    "School Fees Deposit", "Office Stationery Purchase", "Electricity Bill Payment",
-    "Staff Salary Payout", "Computer Lab Maintenance", "Sports Equipments Purchase"
-];
+// हर वाउचर प्रकार के लिए अलग-अलग Particulars ऑप्शंस
+const PARTICULARS_DATABASE = {
+    cash_receipt: ["School Fees Deposit", "Bus Fees Receipt", "Miscellaneous Income Receipt"],
+    cash_payment: ["Office Stationery Purchase", "Tea & Refreshments", "Local Conveyance Expenses"],
+    bank_payment: ["Staff Salary Payout via NEFT", "Electricity Bill Online", "Rent Payment via Cheque"],
+    bank_receipt: ["Online Fees Transfer", "Bank Interest Received", "Grant Received in Bank"]
+};
 
-const HEAD_OF_ACCOUNTS_OPTIONS = [
-    "Tuition Fee A/c", "Office Expense A/c", "Printing & Stationery A/c",
-    "Salary & Wages A/c", "Electricity A/c", "Repairs & Maintenance A/c", "General Expense A/c"
-];
+// हर वाउचर प्रकार के लिए अलग-अलग Head of Accounts ऑप्शंस
+const HEADS_DATABASE = {
+    cash_receipt: ["Tuition Fee A/c", "Admission Fee A/c", "General Income A/c"],
+    cash_payment: ["Printing & Stationery A/c", "Office Expense A/c", "Conveyance A/c"],
+    bank_payment: ["Salary & Wages A/c", "Electricity A/c", "Rent A/c"],
+    bank_receipt: ["Tuition Fee A/c", "Bank Interest A/c", "Donations A/c"],
+    journal_voucher: ["Tuition Fee A/c", "Office Expense A/c", "Salary & Wages A/c", "General Expense A/c"] // JV के लिए कॉमन लिस्ट
+};
 
-// स्टेट मैनेजमेंट
 let currentVoucherType = "cash_receipt";
 let cashParticulars = [];
 let cashAccounts = [];
 let jvDebitAccounts = [];
 let jvCreditAccounts = [];
+
 
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('vDate').valueAsDate = new Date();
