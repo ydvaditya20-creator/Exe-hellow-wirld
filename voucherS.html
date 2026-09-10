@@ -277,9 +277,8 @@
             <div class="col-header">HEAD OF ACCOUNTS</div>
             <div class="col-body-dynamic">
                 <div class="input-control-zone">
-                    <select id="vHeadSelectCash" class="column-select">
-                        <option value="">खाता चुनें...</option>
-                    </select>
+                    <input type="text" id="vHeadSelectCash" list="headAccountsList" placeholder="टाइप करें या चुनें..." class="column-input" onkeypress="handleHeadEnter(event, 'cash')">
+    <datalist id="headAccountsList"></datalist>
                 </div>
                 <div id="accountsDisplayListCash" class="items-list-container"></div>
             </div>
