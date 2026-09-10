@@ -213,10 +213,15 @@
 <div class="top-control-panel">
     <div class="selector-group">
         <label for="voucherTypeSelect">वाउचर का प्रकार चुनें (Voucher Type):</label>
-        <select id="voucherTypeSelect" class="master-select">
-            <option value="cash_receipt">CASH RECEIPT VOUCHER</option>
-            <option value="journal_voucher">JOURNAL VOUCHER</option>
-        </select>
+        <!-- वाउचर सेलेक्टर (बदला हुआ हिस्सा) -->
+<select id="voucherTypeSelect" class="master-select">
+    <option value="cash_receipt">CASH RECEIPT VOUCHER</option>
+    <option value="cash_payment">CASH PAYMENT VOUCHER</option>
+    <option value="bank_payment">BANK PAYMENT VOUCHER</option>
+    <option value="bank_receipt">BANK RECEIPT VOUCHER</option>
+    <option value="journal_voucher">JOURNAL VOUCHER</option>
+</select>
+
     </div>
     <button id="printBtnMain" class="print-btn-main">Print Voucher</button>
 </div>
