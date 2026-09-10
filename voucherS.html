@@ -421,14 +421,13 @@ function loadDropdowns() {
         let o = document.createElement('option'); o.value = opt; partList.appendChild(o);
     });
 
-    const selects = ['vHeadSelectCash', 'vHeadSelectJV1', 'vHeadSelectJV2'];
-    selects.forEach(id => {
-        const select = document.getElementById(id);
-        HEAD_OF_ACCOUNTS_OPTIONS.forEach(opt => {
-            let o = document.createElement('option'); o.value = opt; o.innerText = opt; select.appendChild(o);
-        });
+    // अब यह सेलेक्ट के बजाय datalist में ऑप्शंस लोड करेगा
+    const headList = document.getElementById('headAccountsList');
+    HEAD_OF_ACCOUNTS_OPTIONS.forEach(opt => {
+        let o = document.createElement('option'); o.value = opt; headList.appendChild(o);
     });
 }
+
 
 // वाउचर टाइप बदलने पर ग्रिड टॉगल करना
 function handleVoucherTypeChange(e) {
