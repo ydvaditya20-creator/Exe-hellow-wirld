@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHEMFORD Voucher Management System</title>
+    
+<style>    body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 20px;
+    padding: 0;
+}
+
+/* स्क्रीन कंट्रोल पैनल (चयन करने के लिए) */
+.top-control-panel {
+    width: 950px;
+    margin: 0 auto 20px auto;
+    background: #fff;
+    padding: 15px 25px;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-sizing: border-box;
+}
+.selector-group {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+.selector-group label {
+    font-weight: bold;
+    color: #2c3e50;
+}
+.master-select {
+    padding: 8px 15px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+}
+.print-btn-main {
+    background-color: #27ae60;
+    color: #fff;
+    padding: 10px 25px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 15px;
+}
+.print-btn-main:hover { background-color: #219653; }
+
+/* वाउचर का मुख्य कंटेनर */
+.voucher-card {
+    background-color: #fffde7; 
+    width: 950px;
+    margin: 0 auto;
+    padding: 25px;
+    border: 2px solid #000;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    box-sizing: border-box;
+}
+
+/* हेडर भाग */
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 12px;
+}
+.school-info h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: 1px;
+}
+.school-info p {
+    margin: 3px 0 0 0;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+.voucher-title { text-align: right; }
+.voucher-title h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #000;
+    padding-bottom: 3px;
+}
+.voucher-title p { margin: 5px 0 0 0; font-size: 12px; color: #333; }
+
+/* तारीख और वाउचर नंबर पट्टी */
+.top-meta-strip {
+    display: flex;
+    justify-content: space-between;
+    border: 2px solid #000;
+    border-bottom: none;
+    height: 40px;
+    align-items: center;
+}
+.meta-cell-date, .meta-cell-vno {
+    padding: 0 15px;
+    font-weight: bold;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+}
+
+/* मुख्य ग्रिड (कॉलम्स) */
+.main-voucher-grid {
+    display: flex;
+    border: 2px solid #000;
+    min-height: 250px;
+}
+.voucher-column {
+    display: flex;
+    flex-direction: column;
+    border-right: 2px solid #000;
+}
+.voucher-column:last-child { border-right: none; }
+
+.col-header {
+    font-weight: bold;
+    font-size: 13px;
+    text-align: center;
+    padding: 8px 5px;
+    border-bottom: 2px solid #000;
+    text-transform: uppercase;
+    background-color: rgba(0,0,0,0.02);
+}
+.col-body { flex: 1; padding: 10px; font-size: 15px; }
+.col-body-dynamic { flex: 1; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+
+/* 1. Cash Receipt कॉलम विड्थ */
+.col-sl { width: 8%; }
+.col-particulars { width: 44%; }
+.col-accounts { width: 28%; }
+.col-amount { width: 20%; justify-content: space-between; }
+
+/* 2. Journal Voucher कॉलम विड्थ */
+.col-sl-jv { width: 6%; }
+.col-accounts-jv { width: 31%; }
+.col-amount-jv { width: 13%; justify-content: space-between; }
+
+/* इनपुट कंट्रोल्स */
+.input-control-zone { display: flex; gap: 5px; }
+.column-input, .column-select {
+    flex: 1; padding: 5px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; outline: none;
+}
+.add-item-btn {
+    background-color: #2c3e50; color: white; border: none; padding: 0 10px; border-radius: 4px; cursor: pointer; font-weight: bold;
+}
+.items-list-container { display: flex; flex-direction: column; gap: 5px; font-size: 14px; width: 100%; }
+
+.selected-item-row {
+    display: flex; justify-content: space-between; align-items: center;
+    background-color: rgba(0, 0, 0, 0.02); padding: 4px 8px; border-radius: 4px; border-left: 3px solid #2c3e50;
+    box-sizing: border-box; min-height: 31px;
+}
+.delete-item-btn {
+    background: transparent; border: none; color: #e74c3c; font-weight: bold; cursor: pointer; font-size: 16px; padding: 0 4px;
+}
+
+/* नो बॉर्डर इनपुट्स */
+.no-border-input {
+    width: 100%; border: none; background: transparent; font-size: 15px; outline: none; padding: 4px 0; box-sizing: border-box; border-bottom: 1px dashed #ccc;
+}
+.no-border-input:focus { border-bottom: 1px solid #000; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.no-border-textarea { width: 100%; height: 100%; border: none; background: transparent; font-size: 15px; outline: none; resize: none; }
+
+.total { border-top: 2px solid #000; padding: 8px 10px; font-weight: bold; font-size: 16px; text-align: right; background-color: rgba(0, 0, 0, 0.03); }
+
+/* नरेशन और वर्ड्स */
+.narration-section { border: 2px solid #000; border-top: none; padding: 10px; display: flex; align-items: flex-start; min-height: 50px; }
+.narration-label { font-weight: bold; font-size: 14px; text-transform: uppercase; width: 100px; padding-top: 2px; }
+.narration-value { flex: 1; }
+
+.words-section { border: 2px solid #000; border-top: none; padding: 12px 10px; font-weight: bold; font-size: 14px; }
+.words-output { font-weight: normal; margin-left: 8px; text-transform: capitalize; font-style: italic; }
+
+/* सिग्नेचर ब्लॉक्स */
+.signature-section { display: grid; grid-template-columns: repeat(4, 1fr); border: 2px solid #000; border-top: none; }
+.sig-cell { border-right: 2px solid #000; height: 85px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+.sig-cell:last-child { border-right: none; }
+
+.print-only-text { display: none; font-size: 15px; white-space: pre-wrap; }
+
+/* 🖨️ प्रिंट मीडिया क्वेरी */
+@media print {
+    body { background-color: #fff; margin: 0; }
+    .top-control-panel, .no-border-input, .no-border-textarea, .input-control-zone, .delete-item-btn { display: none !important; }
+    .print-only-text { display: inline-block !important; width: 100%; }
+    .selected-item-row { border-left: none; padding: 2px 0; background: transparent; }
+    .voucher-card { box-shadow: none; width: 100%; padding: 0; border: none; }
+    .top-meta-strip, .main-voucher-grid, .words-section, .signature-section, .narration-section { border-color: #000 !important; }
+}
+
+
+
+</style>
+</head>
+<body>
+
+<!-- वाउचर सेलेक्टर और प्रिंट बटन (सिर्फ स्क्रीन पर दिखेगा) -->
+<div class="top-control-panel">
+    <div class="selector-group">
+        <label for="voucherTypeSelect">वाउचर का प्रकार चुनें (Voucher Type):</label>
+        <select id="voucherTypeSelect" class="master-select">
+            <option value="cash_receipt">CASH RECEIPT VOUCHER</option>
+            <option value="journal_voucher">JOURNAL VOUCHER</option>
+        </select>
+    </div>
+    <button id="printBtnMain" class="print-btn-main">Print Voucher</button>
+</div>
+
+<!-- मुख्य वाउचर कार्ड -->
+<div class="voucher-card">
+    
+    <!-- हेडर भाग -->
+    <div class="header-container">
+        <div class="school-info">
+            <h1>⭐ SHEMFORD</h1>
+            <p>SCHOOL, MIRZAPUR, UTTAR PRADESH</p>
+        </div>
+        <div class="voucher-title">
+            <h2 id="dynamicVoucherTitle">CASH RECEIPT VOUCHER</h2>
+            <p>SHEMFORD SCHOOL, Natwa Road, Mirzapur</p>
+        </div>
+    </div>
+
+    <!-- तारीख और वाउचर नंबर पट्टी -->
+    <div class="top-meta-strip">
+        <div class="meta-cell-date">
+            DATE: <input type="date" id="vDate" class="no-border-input">
+            <span class="print-only-text" id="pDate"></span>
+        </div>
+        <div class="meta-cell-vno">
+            V.No. <input type="text" id="vNo" placeholder="यहाँ लिखें..." class="no-border-input">
+            <span class="print-only-text" id="pNo"></span>
+        </div>
+    </div>
+
+    <!-- ================= 1. CASH RECEIPT VOUCHER GRID ================= -->
+    <div id="cashReceiptGrid" class="main-voucher-grid">
+        <!-- कॉलम 1: Sl.No. -->
+        <div class="voucher-column col-sl">
+            <div class="col-header">Sl.No.</div>
+            <div class="col-body">
+                <input type="text" id="vSlCash" placeholder="1" class="no-border-input text-center">
+                <span class="print-only-text" id="pSlCash"></span>
+            </div>
+        </div>
+
+        <!-- कॉलम 2: Particulars -->
+        <div class="voucher-column col-particulars">
+            <div class="col-header">PARTICULARS</div>
+            <div class="col-body-dynamic">
+                <div class="input-control-zone">
+                    <input type="text" id="vPartInput" list="particularsList" placeholder="टाइप करें या चुनें..." class="column-input">
+                    <datalist id="particularsList"></datalist>
+                    <button id="addPartBtn" class="add-item-btn">+</button>
+                </div>
+                <div id="particularsDisplayList" class="items-list-container"></div>
+            </div>
+        </div>
+
+        <!-- कॉलम 3: Head of Accounts -->
+        <div class="voucher-column col-accounts">
+            <div class="col-header">HEAD OF ACCOUNTS</div>
+            <div class="col-body-dynamic">
+                <div class="input-control-zone">
+                    <select id="vHeadSelectCash" class="column-select">
+                        <option value="">खाता चुनें...</option>
+                    </select>
+                </div>
+                <div id="accountsDisplayListCash" class="items-list-container"></div>
+            </div>
+        </div>
+
+        <!-- कॉलम 4: Amount -->
+        <div class="voucher-column col-amount">
+            <div class="col-header">Amount</div>
+            <div class="col-body-dynamic">
+                <div id="amountsDisplayListCash" class="items-list-container"></div>
+            </div>
+            <div class="total" id="tAtCash">₹ 0.00</div>
+        </div>
+    </div>
+
+    <!-- ================= 2. JOURNAL VOUCHER GRID ================= -->
+    <div id="journalVoucherGrid" class="main-voucher-grid" style="display: none;">
+        <!-- [FIRST PART: DEBIT] -->
+        <div class="voucher-column col-sl-jv">
+            <div class="col-header">Sl.No.</div>
+            <div class="col-body">
+                <input type="text" id="vSlJV1" placeholder="1" class="no-border-input text-center">
+                <span class="print-only-text" id="pSlJV1"></span>
+            </div>
+        </div>
+        
+        <div class="voucher-column col-accounts-jv">
+            <div class="col-header">HEAD OF ACCOUNTS (Dr.)</div>
+            <div class="col-body-dynamic">
+                <div class="input-control-zone">
+                    <select id="vHeadSelectJV1" class="column-select">
+                        <option value="">खाता चुनें...</option>
+                    </select>
+                </div>
+                <div id="accountsDisplayListJV1" class="items-list-container"></div>
+            </div>
+        </div>
+
+        <div class="voucher-column col-amount-jv">
+            <div class="col-header">Amount (Dr.)</div>
+            <div class="col-body-dynamic">
+                <div id="amountsDisplayListJV1" class="items-list-container"></div>
+            </div>
+            <div class="total" id="tAtJV1">₹ 0.00</div>
+        </div>
+        
+        <!-- [SECOND PART: CREDIT] -->
+        <div class="voucher-column col-sl-jv" style="border-left: 2px solid #000;">
+            <div class="col-header">Sl.No.</div>
+            <div class="col-body">
+                <input type="text" id="vSlJV2" placeholder="1" class="no-border-input text-center">
+                <span class="print-only-text" id="pSlJV2"></span>
+            </div>
+        </div>
+
+        <div class="voucher-column col-accounts-jv">
+            <div class="col-header">HEAD OF ACCOUNTS (Cr.)</div>
+            <div class="col-body-dynamic">
+                <div class="input-control-zone">
+                    <select id="vHeadSelectJV2" class="column-select">
+                        <option value="">खाता चुनें...</option>
+                    </select>
+                </div>
+                <div id="accountsDisplayListJV2" class="items-list-container"></div>
+            </div>
+        </div>
+
+        <div class="voucher-column col-amount-jv">
+            <div class="col-header">Amount (Cr.)</div>
+            <div class="col-body-dynamic">
+                <div id="amountsDisplayListJV2" class="items-list-container"></div>
+            </div>
+            <div class="total" id="tAtJV2">₹ 0.00</div>
+        </div>
+    </div>
+
+    <!-- Narration (विवरण) बॉक्स -->
+    <div class="narration-section">
+        <div class="narration-label">Narration:</div>
+        <div class="narration-value">
+            <textarea id="vNarrationInput" placeholder="यहाँ नरेशन (विवरण) लिखें..." class="no-border-textarea"></textarea>
+            <span class="print-only-text" id="pNarration"></span>
+        </div>
+    </div>
+
+    <!-- शब्दों में रकम -->
+    <div class="words-section">
+        AMOUNT'S (IN WORDS) Rs. : <span id="vWords" class="words-output">Rupees Only</span>
+    </div>
+
+    <!-- 4 सिग्नेचर कॉलम -->
+    <div class="signature-section">
+        <div class="sig-cell">Prepared By</div>
+        <div class="sig-cell">Payment By</div>
+        <div class="sig-cell">Approved By</div>
+        <div class="sig-cell">Receipt By</div>
+    </div>
+
+</div>
+<script>
+
+// कॉन्स्टेंट ऑप्शंस
+const PARTICULARS_OPTIONS = [
+    "School Fees Deposit", "Office Stationery Purchase", "Electricity Bill Payment",
+    "Staff Salary Payout", "Computer Lab Maintenance", "Sports Equipments Purchase"
+];
+
+const HEAD_OF_ACCOUNTS_OPTIONS = [
+    "Tuition Fee A/c", "Office Expense A/c", "Printing & Stationery A/c",
+    "Salary & Wages A/c", "Electricity A/c", "Repairs & Maintenance A/c", "General Expense A/c"
+];
+
+// स्टेट मैनेजमेंट
+let currentVoucherType = "cash_receipt";
+let cashParticulars = [];
+let cashAccounts = [];
+let jvDebitAccounts = [];
+let jvCreditAccounts = [];
+
+document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById('vDate').valueAsDate = new Date();
+    
+    // ड्रॉपडाउन डेटा लोड करना
+    loadDropdowns();
+
+    // इवेंट लिस्टनर्स
+    document.getElementById('voucherTypeSelect').addEventListener('change', handleVoucherTypeChange);
+    document.getElementById('vPartInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') addParticularItem(); });
+    document.getElementById('addPartBtn').addEventListener('click', addParticularItem);
+    document.getElementById('vHeadSelectCash').addEventListener('change', () => addAccountItem('cash'));
+    document.getElementById('vHeadSelectJV1').addEventListener('change', () => addAccountItem('jv_dr'));
+    document.getElementById('vHeadSelectJV2').addEventListener('change', () => addAccountItem('jv_cr'));
+    document.getElementById('printBtnMain').addEventListener('click', prepareAndPrint);
+});
+
+// ड्रॉपडाउन लोड करना
+function loadDropdowns() {
+    const partList = document.getElementById('particularsList');
+    PARTICULARS_OPTIONS.forEach(opt => {
+        let o = document.createElement('option'); o.value = opt; partList.appendChild(o);
+    });
+
+    const selects = ['vHeadSelectCash', 'vHeadSelectJV1', 'vHeadSelectJV2'];
+    selects.forEach(id => {
+        const select = document.getElementById(id);
+        HEAD_OF_ACCOUNTS_OPTIONS.forEach(opt => {
+            let o = document.createElement('option'); o.value = opt; o.innerText = opt; select.appendChild(o);
+        });
+    });
+}
+
+// वाउचर टाइप बदलने पर ग्रिड टॉगल करना
+function handleVoucherTypeChange(e) {
+    currentVoucherType = e.target.value;
+    const title = document.getElementById('dynamicVoucherTitle');
+    const cashGrid = document.getElementById('cashReceiptGrid');
+    const jvGrid = document.getElementById('journalVoucherGrid');
+
+    if (currentVoucherType === "cash_receipt") {
+        title.innerText = "CASH RECEIPT VOUCHER";
+        cashGrid.style.display = "flex";
+        jvGrid.style.display = "none";
+        calculateTotals('cash');
+    } else {
+        title.innerText = "JOURNAL VOUCHER";
+        cashGrid.style.display = "none";
+        jvGrid.style.display = "flex";
+        calculateTotals('jv');
+    }
+}
+
+// Cash Voucher Particulars जोड़ना
+function addParticularItem() {
+    const input = document.getElementById('vPartInput');
+    const val = input.value.trim();
+    if (val && !cashParticulars.includes(val)) {
+        cashParticulars.push(val);
+        renderParticulars();
+        input.value = "";
+    }
+}
+
+window.removeParticular = function(index) {
+    cashParticulars.splice(index, 1);
+    renderParticulars();
+}
+
+function renderParticulars() {
+    const container = document.getElementById('particularsDisplayList');
+    container.innerHTML = "";
+    cashParticulars.forEach((item, index) => {
+        container.innerHTML += `<div class="selected-item-row"><span>• ${item}</span><button class="delete-item-btn" onclick="removeParticular(${index})">×</button></div>`;
+    });
+}
+
+// खाते जोड़ना (Cash, JV Debit, JV Credit)
+function addAccountItem(type) {
+    if (type === 'cash') {
+        const select = document.getElementById('vHeadSelectCash');
+        if (select.value && !cashAccounts.includes(select.value)) { cashAccounts.push(select.value); renderCashAccounts(); }
+        select.value = "";
+    } else if (type === 'jv_dr') {
+        const select = document.getElementById('vHeadSelectJV1');
+        if (select.value && !jvDebitAccounts.includes(select.value)) { jvDebitAccounts.push(select.value); renderJVAccounts(1); }
+        select.value = "";
+    } else if (type === 'jv_cr') {
+        const select = document.getElementById('vHeadSelectJV2');
+        if (select.value && !jvCreditAccounts.includes(select.value)) { jvCreditAccounts.push(select.value); renderJVAccounts(2); }
+        select.value = "";
+    }
+}
+
+window.removeAccountNode = function(type, index) {
+    if (type === 'cash') { cashAccounts.splice(index, 1); renderCashAccounts(); }
+    else if (type === 'jv1') { jvDebitAccounts.splice(index, 1); renderJVAccounts(1); }
+    else if (type === 'jv2') { jvCreditAccounts.splice(index, 1); renderJVAccounts(2); }
+}
+
+// Cash Accounts & Amount render
+function renderCashAccounts() {
+    const headCont = document.getElementById('accountsDisplayListCash');
+    const amtCont = document.getElementById('amountsDisplayListCash');
+    headCont.innerHTML = ""; amtCont.innerHTML = "";
+
+    cashAccounts.forEach((item, index) => {
+        headCont.innerHTML += `<div class="selected-item-row"><span>• ${item}</span><button class="delete-item-btn" onclick="removeAccountNode('cash', ${index})">×</button></div>`;
+        amtCont.innerHTML += `<div class="selected-item-row" style="justify-content:flex-end;"><input type="number" class="no-border-input text-right cash-amt-input" placeholder="0.00" data-index="${index}" oninput="calculateTotals('cash')"><span class="print-only-text text-right" id="pAmtCash_${index}"></span></div>`;
+    });
+    calculateTotals('cash');
+}
+
+// JV Accounts & Amount render
+function renderJVAccounts(partNum) {
+    const headCont = document.getElementById(`accountsDisplayListJV${partNum}`);
+    const amtCont = document.getElementById(`amountsDisplayListJV${partNum}`);
+    headCont.innerHTML = ""; amtCont.innerHTML = "";
+    const list = (partNum === 1) ? jvDebitAccounts : jvCreditAccounts;
+    const typeStr = (partNum === 1) ? 'jv1' : 'jv2';
+
+    list.forEach((item, index) => {
+        headCont.innerHTML += `<div class="selected-item-row"><span>• ${item}</span><button class="delete-item-btn" onclick="removeAccountNode('${typeStr}', ${index})">×</button></div>`;
+        amtCont.innerHTML += `<div class="selected-item-row" style="justify-content:flex-end;"><input type="number" class="no-border-input text-right jv${partNum}-amt-input" placeholder="0.00" data-index="${index}" oninput="calculateTotals('jv')"><span class="print-only-text text-right" id="pAmtJV${partNum}_${index}"></span></div>`;
+    });
+    calculateTotals('jv');
+}
+
+// टोटल्स और अमाउंट इन वर्ड्स कैलकुलेशन
+window.calculateTotals = function(mode) {
+    let grandTotal = 0;
+    
+    if (mode === 'cash' && currentVoucherType === 'cash_receipt') {
+        const inputs = document.querySelectorAll('.cash-amt-input');
+        inputs.forEach(input => {
+            const val = parseFloat(input.value) || 0;
+            grandTotal += val;
+            const pSpan = document.getElementById(`pAmtCash_${input.getAttribute('data-index')}`);
+            if(pSpan) pSpan.innerText = val > 0 ? "₹ " + val.toLocaleString('en-IN', {minimumFractionDigits: 2}) : "";
+        });
+        document.getElementById('tAtCash').innerText = "₹ " + grandTotal.toLocaleString('en-IN', {minimumFractionDigits: 2});
+    } 
+    else if (mode === 'jv' && currentVoucherType === 'journal_voucher') {
+        // JV में Dr. और Cr. दोनों कैलकुलेट होंगे, शब्दों के लिए Dr. वाले अमाउंट का उपयोग करेंगे
+        let totalDr = 0, totalCr = 0;
+        document.querySelectorAll('.jv1-amt-input').forEach(input => {
+            const val = parseFloat(input.value) || 0; totalDr += val;
+            const pSpan = document.getElementById(`pAmtJV1_${input.getAttribute('data-index')}`);
+            if(pSpan) pSpan.innerText = val > 0 ? "₹ " + val.toLocaleString('en-IN', {minimumFractionDigits: 2}) : "";
+        });
+        document.querySelectorAll('.jv2-amt-input').forEach(input => {
+            const val = parseFloat(input.value) || 0; totalCr += val;
+            const pSpan = document.getElementById(`pAmtJV2_${input.getAttribute('data-index')}`);
+            if(pSpan) pSpan.innerText = val > 0 ? "₹ " + val.toLocaleString('en-IN', {minimumFractionDigits: 2}) : "";
+        });
+        document.getElementById('tAtJV1').innerText = "₹ " + totalDr.toLocaleString('en-IN', {minimumFractionDigits: 2});
+        document.getElementById('tAtJV2').innerText = "₹ " + totalCr.toLocaleString('en-IN', {minimumFractionDigits: 2});
+        grandTotal = totalDr; // शब्दों के लिए डेबिट टोटल मान लेते हैं
+    }
+
+    document.getElementById('vWords').innerText = grandTotal > 0 ? numberToWords(grandTotal) + " Rupees Only" : "Rupees Only";
+}
+
+// प्रिंट की तैयारी
+function prepareAndPrint() {
+    const dVal = document.getElementById('vDate').value;
+    if(dVal) document.getElementById('pDate').innerText = new Date(dVal).toLocaleDateString('en-GB');
+    
+    document.getElementById('pNo').innerText = document.getElementById('vNo').value;
+    document.getElementById('pNarration').innerText = document.getElementById('vNarrationInput').value;
+
+    if (currentVoucherType === "cash_receipt") {
+        document.getElementById('pSlCash').innerText = document.getElementById('vSlCash').value;
+    } else {
+        document.getElementById('pSlJV1').innerText = document.getElementById('vSlJV1').value;
+        document.getElementById('pSlJV2').innerText = document.getElementById('vSlJV2').value;
+    }
+    window.print();
+}
+
+// संख्या से शब्दों (भारतीय रुपया फ़ॉर्मेट)
+function numberToWords(amount) {
+    amount = Number(amount);
+
+    if (!Number.isFinite(amount)) return "Zero Rupees Only";
+
+    // Rupees और Paise अलग करें
+    let rupees = Math.floor(amount);
+    let paise = Math.round((amount - rupees) * 100);
+
+    // Rounding की वजह से 100 paise हो जाए
+    if (paise === 100) {
+        rupees += 1;
+        paise = 0;
+    }
+
+    const ones = [
+        "Zero", "One", "Two", "Three", "Four",
+        "Five", "Six", "Seven", "Eight", "Nine"
+    ];
+
+    const teens = [
+        "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen",
+        "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"
+    ];
+
+    const tens = [
+        "", "", "Twenty", "Thirty", "Forty",
+        "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"
+    ];
+
+    // 0-99
+    function twoDigitWords(n) {
+        n = Number(n);
+
+        if (n === 0) return "";
+        if (n < 10) return ones[n];
+        if (n < 20) return teens[n - 10];
+
+        let result = tens[Math.floor(n / 10)];
+
+        if (n % 10 !== 0) {
+            result += " " + ones[n % 10];
+        }
+
+        return result;
+    }
+
+    // 0-999
+    function threeDigitWords(n) {
+        n = Number(n);
+
+        let result = "";
+
+        if (n >= 100) {
+            result += ones[Math.floor(n / 100)] + " Hundred";
+            n = n % 100;
+
+            if (n > 0) {
+                result += " ";
+            }
+        }
+
+        if (n > 0) {
+            result += twoDigitWords(n);
+        }
+
+        return result;
+    }
+
+    let result = "";
+
+    // Crore
+    let crore = Math.floor(rupees / 10000000);
+    rupees = rupees % 10000000;
+
+    if (crore > 0) {
+        result += threeDigitWords(crore) + " Crore ";
+    }
+
+    // Lakh
+    let lakh = Math.floor(rupees / 100000);
+    rupees = rupees % 100000;
+
+    if (lakh > 0) {
+        result += twoDigitWords(lakh) + " Lakh ";
+    }
+
+    // Thousand
+    let thousand = Math.floor(rupees / 1000);
+    rupees = rupees % 1000;
+
+    if (thousand > 0) {
+        result += twoDigitWords(thousand) + " Thousand ";
+    }
+
+    // Hundred
+    if (rupees > 0) {
+        result += threeDigitWords(rupees);
+    }
+
+    result = result.replace(/\s+/g, " ").trim();
+
+    // अगर रुपये 0 हों
+    if (result === "") {
+        result = "Zero";
+    }
+
+    // Paise जोड़ें
+    if (paise > 0) {
+        result += " Rupees and " + twoDigitWords(paise) + " Paise Only";
+    } else {
+        result += " Rupees Only";
+    }
+
+    return result;
+}
+  
+</script>
+</body>
+</html>
