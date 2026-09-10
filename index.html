@@ -413,18 +413,30 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ड्रॉपडाउन लोड करना
+// अब यह फंक्शन चुने हुए वाउचर टाइप के अनुसार लिस्ट खाली करके दोबारा भरेगा
 function loadDropdowns() {
+    // 1. Particulars List खाली करके दोबारा भरना
     const partList = document.getElementById('particularsList');
-    PARTICULARS_OPTIONS.forEach(opt => {
-        let o = document.createElement('option'); o.value = opt; partList.appendChild(o);
-    });
+    partList.innerHTML = "";
+    
+    // अगर JV नहीं है, तो वर्तमान वाउचर के हिसाब से Particulars लोड करें
+    if (PARTICULARS_DATABASE[currentVoucherType]) {
+        PARTICULARS_DATABASE[currentVoucherType].forEach(opt => {
+            let o = document.createElement('option'); o.value = opt; partList.appendChild(o);
+        });
+    }
 
-    // अब यह सेलेक्ट के बजाय datalist में ऑप्शंस लोड करेगा
+    // 2. Head of Accounts List खाली करके दोबारा भरना
     const headList = document.getElementById('headAccountsList');
-    HEAD_OF_ACCOUNTS_OPTIONS.forEach(opt => {
-        let o = document.createElement('option'); o.value = opt; headList.appendChild(o);
-    });
+    headList.innerHTML = "";
+    
+    if (HEADS_DATABASE[currentVoucherType]) {
+        HEADS_DATABASE[currentVoucherType].forEach(opt => {
+            let o = document.createElement('option'); o.value = opt; headList.appendChild(o);
+        });
+    }
 }
+
 
 
 // वाउचर टाइप बदलने पर ग्रिड टॉगल करना
