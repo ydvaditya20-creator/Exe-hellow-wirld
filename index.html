@@ -440,24 +440,50 @@ function loadDropdowns() {
 
 
 // वाउचर टाइप बदलने पर ग्रिड टॉगल करना
+// वाउचर टाइप बदलने पर हेडर नाम बदलना, ग्रिड टॉगल करना और सही लिस्ट लोड करना
 function handleVoucherTypeChange(e) {
     currentVoucherType = e.target.value;
     const title = document.getElementById('dynamicVoucherTitle');
     const cashGrid = document.getElementById('cashReceiptGrid');
     const jvGrid = document.getElementById('journalVoucherGrid');
 
-    if (currentVoucherType === "cash_receipt") {
-        title.innerText = "CASH RECEIPT VOUCHER";
-        cashGrid.style.display = "flex";
-        jvGrid.style.display = "none";
-        calculateTotals('cash');
-    } else {
+    // वाउचर का प्रकार बदलते ही पुरानी भरी हुई लिस्ट रीसेट करने के लिए (ताकि पुराना डेटा मिक्स न हो)
+    cashParticulars = []; cashAccounts = []; jvDebitAccounts = []; jvCreditAccounts = [];
+    document.getElementById('vPartInput').value = "";
+    document.getElementById('vHeadSelectCash').value = "";
+    if(document.getElementById('vHeadSelectJV1')) document.getElementById('vHeadSelectJV1').value = "";
+    if(document.getElementById('vHeadSelectJV2')) document.getElementById('vHeadSelectJV2').value = "";
+    
+    // स्क्रीन डिस्प्ले लिस्ट को साफ़ करना
+    renderParticulars();
+    renderCashAccounts();
+    if(typeof renderJVAccounts === 'function') { renderJVAccounts(1); renderJVAccounts(2); }
+
+    // लेआउट और नाम सेट करना
+    if (currentVoucherType === "journal_voucher") {
         title.innerText = "JOURNAL VOUCHER";
         cashGrid.style.display = "none";
         jvGrid.style.display = "flex";
+        
+        // JV ग्रिड के लिए ड्रॉपडाउन दोबारा भरना (क्योंकि इसमें इनपुट सीधे ग्रिड में हैं)
+        loadDropdowns();
         calculateTotals('jv');
+    } else {
+        // बाकी चारों वाउचर्स के लिए कैश रसीद वाला सेम लेआउट काम करेगा
+        if (currentVoucherType === "cash_receipt") title.innerText = "CASH RECEIPT VOUCHER";
+        else if (currentVoucherType === "cash_payment") title.innerText = "CASH PAYMENT VOUCHER";
+        else if (currentVoucherType === "bank_payment") title.innerText = "BANK PAYMENT VOUCHER";
+        else if (currentVoucherType === "bank_receipt") title.innerText = "BANK RECEIPT VOUCHER";
+
+        cashGrid.style.display = "flex";
+        jvGrid.style.display = "none";
+        
+        // नए चुने वाउचर की लिस्ट लोड करना
+        loadDropdowns();
+        calculateTotals('cash');
     }
 }
+
 
 // Cash Voucher Particulars जोड़ना
 function addParticularItem() {
