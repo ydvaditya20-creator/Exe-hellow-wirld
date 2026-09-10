@@ -481,10 +481,25 @@ function handleVoucherTypeChange(e) {
         calculateTotals('jv');
     } else {
         // बाकी चारों वाउचर्स के लिए कैश रसीद वाला सेम लेआउट काम करेगा
-        if (currentVoucherType === "cash_receipt") title.innerText = "CASH RECEIPT VOUCHER";
-        else if (currentVoucherType === "cash_payment") title.innerText = "CASH PAYMENT VOUCHER";
-        else if (currentVoucherType === "bank_payment") title.innerText = "BANK PAYMENT VOUCHER";
-        else if (currentVoucherType === "bank_receipt") title.innerText = "BANK RECEIPT VOUCHER";
+        // handleVoucherTypeChange फंक्शन के अंदर सबसे नीचे इसे पेस्ट करें:
+const card = document.querySelector('.voucher-card');
+
+// अलग-अलग वाउचर के हिसाब से डायरेक्ट inline CSS कलर सेट करना
+if (currentVoucherType === "cash_receipt") {
+    card.style.backgroundColor = "#fffde7"; // हल्का पीला
+} else if (currentVoucherType === "cash_payment") {
+    card.style.backgroundColor = "#fbe9e7"; // हल्का नारंगी/लाल
+} else if (currentVoucherType === "bank_payment") {
+    card.style.backgroundColor = "#e3f2fd"; // हल्का नीला
+} else if (currentVoucherType === "bank_receipt") {
+    card.style.backgroundColor = "#e8f5e9"; // हल्का हरा
+} else if (currentVoucherType === "journal_voucher") {
+    card.style.backgroundColor = "#f3e5f5"; // हल्का बैंगनी
+}
+
+// यह दो लाइन्स सुनिश्चित करेंगी कि प्रिंट करते समय भी यह inline कलर प्रिंटर पर साफ़ छपे
+card.style.webkitPrintColorAdjust = "exact";
+card.style.printColorAdjust = "exact";
 
         cashGrid.style.display = "flex";
         jvGrid.style.display = "none";
