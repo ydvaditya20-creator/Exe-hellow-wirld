@@ -309,9 +309,8 @@
             <div class="col-header">HEAD OF ACCOUNTS (Dr.)</div>
             <div class="col-body-dynamic">
                 <div class="input-control-zone">
-                    <select id="vHeadSelectJV1" class="column-select">
-                        <option value="">खाता चुनें...</option>
-                    </select>
+                    <input type="text" id="vHeadSelectJV1" list="headAccountsList" placeholder="टाइप करें या चुनें..." class="column-input" onkeypress="handleHeadEnter(event, 'jv_dr')">
+
                 </div>
                 <div id="accountsDisplayListJV1" class="items-list-container"></div>
             </div>
@@ -338,9 +337,8 @@
             <div class="col-header">HEAD OF ACCOUNTS (Cr.)</div>
             <div class="col-body-dynamic">
                 <div class="input-control-zone">
-                    <select id="vHeadSelectJV2" class="column-select">
-                        <option value="">खाता चुनें...</option>
-                    </select>
+                    <input type="text" id="vHeadSelectJV2" list="headAccountsList" placeholder="टाइप करें या चुनें..." class="column-input" onkeypress="handleHeadEnter(event, 'jv_cr')">
+
                 </div>
                 <div id="accountsDisplayListJV2" class="items-list-container"></div>
             </div>
