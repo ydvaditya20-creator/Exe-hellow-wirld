@@ -424,22 +424,69 @@ body {
 <script>
 
 // हर वाउचर प्रकार के लिए अलग-अलग Particulars ऑप्शंस
-const PARTICULARS_DATABASE = {
-    cash_receipt: ["School Fees Deposit", "Bus Fees Receipt", "Miscellaneous Income Receipt"],
-    cash_payment: ["Office Stationery Purchase", "Tea & Refreshments", "Local Conveyance Expenses"],
-    bank_payment: ["Staff Salary Payout via NEFT", "Electricity Bill Online", "Rent Payment via Cheque"],
-    bank_receipt: ["Online Fees Transfer", "Bank Interest Received", "Grant Received in Bank"],
-	journal_voucher: [ "Being Salary Expense Recorded", "Being Office Expenses Recorded", "Being Electricity Expenses Recorded", "Being Rent Expenses Recorded", "Being Fees Adjustment Entry", "Being Transfer Entry", "Being Outstanding Expense Recorded", "Being General Adjustment Entry" ]
-};
+// 1. Purane const ko hatakar unhe khali let variables bana dein
+let PARTICULARS_DATABASE = {};
+let HEADS_DATABASE = {};
 
-// हर वाउचर प्रकार के लिए अलग-अलग Head of Accounts ऑप्शंस
-const HEADS_DATABASE = {
-    cash_receipt: ["Tuition Fee A/c", "Admission Fee A/c", "General Income A/c"],
-    cash_payment: ["Printing & Stationery A/c", "Office Expense A/c", "Conveyance A/c"],
-    bank_payment: ["Salary & Wages A/c", "Electricity A/c", "Rent A/c"],
-    bank_receipt: ["Tuition Fee A/c", "Bank Interest A/c", "Donations A/c"],
-    journal_voucher: ["Tuition Fee A/c", "Office Expense A/c", "Salary & Wages A/c", "General Expense A/c"] // JV के लिए कॉमन लिस्ट
-};
+// 2. Apne Google Web App ka URL yahan dalein
+const SCRIPT_URL = "YAHAN_APNA_WEB_APP_URL_PASTE_KAREIN"; 
+
+// 3. Google Sheet se real-time data kheenchne ka function
+async function loadDataFromCloud() {
+    try {
+        // Agar aapke paas koi "Loading..." dikhane wala element hai toh use yahan show karein
+        let response = await fetch(SCRIPT_URL);
+        let data = await response.json();
+        
+        // Google sheet ka data ab in variables mein bhar jayega
+        PARTICULARS_DATABASE = data.particulars;
+        HEADS_DATABASE = data.heads;
+        
+        console.log("Cloud Data Successfully Loaded!");
+        
+        // ⚠️ ZAROORI: Yahan par aap apne us function ka naam likhein jo dropdown ko banta/refresh karta hai
+        // Udaharan ke liye agar aapke function ka naam updateDropdowns hai:
+        if (typeof updateDropdowns === "function") {
+            updateDropdowns(); 
+        }
+    } catch (error) {
+        console.error("Google Sheet se data load nahi ho paya:", error);
+    }
+}
+
+// 4. Jaise hi aapka page load hoga, yeh automatic Google Sheet se data le aayega
+window.addEventListener('DOMContentLoaded', loadDataFromCloud);
+
+
+// 5. Naya option add karne ke liye function (Ise aap apne "Save to Cloud" button par jodenge)
+async function handleAddNewOption(category, voucherType, newValue) {
+    if (!newValue || !newValue.trim()) {
+        alert("Kripya naya naam type karein!");
+        return;
+    }
+
+    try {
+        let response = await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify({
+                category: category,      // "Particulars" ya "Heads"
+                voucherType: voucherType, // e.g., "cash_receipt"
+                newValue: newValue.trim()
+            })
+        });
+        
+        let result = await response.json();
+        if (result.status === "success") {
+            alert(`"${newValue}" successfully jud gaya hai!`);
+            await loadDataFromCloud(); // Dropdowns ko turant naye data ke sath refresh karega
+        } else {
+            alert("Error: " + result.message);
+        }
+    } catch (error) {
+        console.error("Save karne mein error aaya:", error);
+    }
+}
+
 
 let currentVoucherType = "cash_receipt";
 let cashParticulars = [];
