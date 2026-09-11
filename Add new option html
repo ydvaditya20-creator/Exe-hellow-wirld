@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voucher Form with Cloud DB</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; background-color: #f4f7f6; }
+        .form-container, .admin-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; max-width: 500px; }
+        label { font-weight: bold; display: block; margin-top: 15px; margin-bottom: 5px; }
+        select, input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        button { background-color: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; margin-top: 15px; width: 100%; font-size: 15px; }
+        button:hover { background-color: #218838; }
+        .admin-container { background-color: #e9ecef; border: 1px solid #ced4da; }
+        .loading { color: #007bff; font-weight: bold; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="loadingStatus" class="loading">Google Sheet se data load ho raha hai... kripya intezar karein...</div>
+
+    <!-- MAIN VOUCHER FORM -->
+    <div class="form-container">
+        <h2>Voucher Entry Form</h2>
+        
+        <label for="voucherType">Voucher Type</label>
+        <select id="voucherType" onchange="updateDropdowns()">
+            <option value="cash_receipt">Cash Receipt</option>
+            <option value="cash_payment">Cash Payment</option>
+            <option value="bank_payment">Bank Payment</option>
+            <option value="bank_receipt">Bank Receipt</option>
+            <option value="journal_voucher">Journal Voucher</option>
+        </select>
+
+        <label for="particulars">Particulars</label>
+        <select id="particulars">
+            <!-- Cloud se options yahan aayenge -->
+        </select>
+
+        <label for="heads">Head of Accounts</label>
+        <select id="heads">
+            <!-- Cloud se options yahan aayenge -->
+        </select>
+        
+        <button type="button">Submit Voucher</button>
+    </div>
+
+    <!-- ADD NEW OPTION ADMIN PANEL -->
+    <div class="admin-container">
+        <h3>➕ Add New Custom Option (Cloud)</h3>
+        
+        <label for="addCategory">Select Category</label>
+        <select id="addCategory">
+            <option value="Particulars">Particulars</option>
+            <option value="Heads">Head of Accounts</option>
+        </select>
+
+        <label for="addValue">New Option Name</label>
+        <input type="text" id="addValue" placeholder="Type new name here... e.g. Audit Fees A/c">
+
+        <button type="button" style="background-color: #007bff;" onclick="handleAddNewOption()">Save To Cloud</button>
+    </div>
+
+    <script>
+        // ⚠️ APNA WEB APP URL YAHAN PASTE KAREIN
+        const SCRIPT_URL = "YAHAN_APNA_WEB_APP_URL_PASTE_KAREIN";
+
+        let PARTICULARS_DATABASE = {};
+        let HEADS_DATABASE = {};
+
+        // Cloud se data pull karne ka function
+        async function loadDataFromCloud() {
+            document.getElementById('loadingStatus').style.display = 'block';
+            document.getElementById('loadingStatus').innerText = "Google Sheet se data load ho raha hai...";
+            
+            try {
+                let response = await fetch(SCRIPT_URL);
+                let data = await response.json();
+                
+                PARTICULARS_DATABASE = data.particulars;
+                HEADS_DATABASE = data.heads;
+                
+                document.getElementById('loadingStatus').style.display = 'none';
+                updateDropdowns(); // Dropdowns reload karein
+            } catch (error) {
+                document.getElementById('loadingStatus').innerText = "❌ Data load karne mein fail! URL check karein.";
+                console.error("Error fetching data:", error);
+            }
+        }
+
+        // Voucher type badalne par dono dropdowns ke options update karne ka function
+        function updateDropdowns() {
+            const vType = document.getElementById('voucherType').value;
+            
+            const partSelect = document.getElementById('particulars');
+            const headsSelect = document.getElementById('heads');
+            
+            // Clear existing options
+            partSelect.innerHTML = '';
+            headsSelect.innerHTML = '';
+            
+            // Particulars load karein
+            if(PARTICULARS_DATABASE[vType]) {
+                PARTICULARS_DATABASE[vType].forEach(item => {
+                    let opt = document.createElement('option');
+                    opt.value = item;
+                    opt.innerText = item;
+                    partSelect.appendChild(opt);
+                });
+            }
+            
+            // Heads load karein
+            if(HEADS_DATABASE[vType]) {
+                HEADS_DATABASE[vType].forEach(item => {
+                    let opt = document.createElement('option');
+                    opt.value = item;
+                    opt.innerText = item;
+                    headsSelect.appendChild(opt);
+                });
+            }
+        }
+
+        // Form se naya option cloud par send karne ka function
+        async function handleAddNewOption() {
+            const category = document.getElementById('addCategory').value;
+            const voucherType = document.getElementById('voucherType').value; // Current selected voucher type
+            const newValue = document.getElementById('addValue').value.trim();
+            const saveBtn = document.querySelector(".admin-container button");
+
+            if (!newValue) {
+                alert("Kripya naya naam type karein!");
+                return;
+            }
+
+            // UI feedback ke liye button ko disable karein
+            saveBtn.disabled = true;
+            saveBtn.innerText = "Saving to Google Sheet...";
+
+            try {
+                let response = await fetch(SCRIPT_URL, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        category: category,
+                        voucherType: voucherType,
+                        newValue: newValue
+                    })
+                });
+                
+                let result = await response.json();
+                if (result.status === "success") {
+                    alert(`"${newValue}" ko ${voucherType} ke ${category} mein successfully jod diya gaya hai!`);
+                    document.getElementById('addValue').value = ''; // Input clear karein
+                    await loadDataFromCloud(); // Naya data khinchein aur dropdown refresh karein
+                } else {
+                    alert("Error: " + result.message);
+                }
+            } catch (error) {
+                alert("Kuch dikkat aayi! Console check karein.");
+                console.error("Error saving data:", error);
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerText = "Save To Cloud";
+            }
+        }
+
+        // Page load hote hi data fetch chalayein
+        window.addEventListener('DOMContentLoaded', loadDataFromCloud);
+    </script>
+</body>
+</html>
