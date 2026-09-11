@@ -63,7 +63,7 @@
 
     <script>
         // ⚠️ APNA WEB APP URL YAHAN PASTE KAREIN
-        const SCRIPT_URL = "YAHAN_APNA_WEB_APP_URL_PASTE_KAREIN";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyzqEpK7KWiS4c6f7QX8pgrFLnl_klWNsAsZTu8OYANjv8XoOy-mO5FPBd_CMfEIPzt/exec";
 
         let PARTICULARS_DATABASE = {};
         let HEADS_DATABASE = {};
