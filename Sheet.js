@@ -1,6 +1,5 @@
 // ⚠️ APNI GOOGLE SHEET KI ID YAHAN DALEIN. https://docs.google.com/spreadsheets/u/0/1qAG5pvjpj0iLEi0RPjEMC_kV01bceCY7sBNys7-xitE /htmlview#gid=63118773
-const SPREADSHEET_ID = "1qAG5pvjpj0iLEi0RPjEMC_kV01bceCY7sBNys7";
-
+SPREADSHEET_ID = "1qAG5pvjpj0iLEi0RPjEMC_kV01bceCY7sBNys7-xitE";
 // Isse mobile par bilkul sahi aur fixed sheet target hogi
 function getTargetSpreadsheet() {
   return SpreadsheetApp.openById(SPREADSHEET_ID);
