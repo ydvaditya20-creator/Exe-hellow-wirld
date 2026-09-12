@@ -765,7 +765,7 @@ window.syncRecordsToGoogleSheet = function() {
     alert("यह सिस्टम अब फुली ऑटोमैटिक है! जैसे ही आप ऊपर फॉर्म सबमिट या अपडेट करेंगे, डेटा सीधे रीयल-टाइम में गूगल शीट में सिंक हो जाएगा।");
 };
 // 🟢 नया प्रिंट वाउचर इंजन
-window.printVoucher = function(vNo) {
+window.printVucher = function(vNo) {
     const tx = savedTransactions.find(t => t.voucherNo === vNo);
     if (!tx) {
         alert("वाउचर का डेटा नहीं मिला!");
@@ -872,6 +872,100 @@ window.printVoucher = function(vNo) {
         </html>
     `);
     printWindow.document.close();
+};
+window.printVoucher = async function(vNo) {
+    const tx = savedTransactions.find(t => t.voucherNo === vNo);
+    if (!tx) {
+        alert("वाउचर का डेटा नहीं मिला!");
+        return;
+    }
+
+    // अमाउंट को शब्दों में बदलने का फंक्शन (अगर आपके पास पहले से है तो इसे बदल सकते हैं)
+    const txTotalWords = typeof convertNumberToWords === 'function' ? convertNumberToWords(tx.totalAmount || 0) : '';
+
+    // ग्रिड विजिबिलिटी लॉजिक सेट करना
+    const isJournal = tx.voucherType.toUpperCase() === 'JOURNAL';
+    let cashGridDisplay = isJournal ? 'none' : 'grid';
+    let journalGridDisplay = isJournal ? 'grid' : 'none';
+
+    // 1. CASH / RECEIPT / PAYMENT डेटा जनरेशन
+    let particularsListHtml = '';
+    let accountsListHtml = '';
+    let amountsListHtml = '';
+    let totalAmt = 0;
+
+    // 2. JOURNAL डेटा जनरेशन
+    let jvDrAccountsHtml = '';
+    let jvDrAmountsHtml = '';
+    let jvCrAccountsHtml = '';
+    let jvCrAmountsHtml = '';
+    let jvDrTotal = 0;
+    let jvCrTotal = 0;
+
+    // ट्रांजैक्शन लाइनों को प्रोसेस करना
+    tx.lines.forEach(line => {
+        const amtText = '₹' + line.amount.toFixed(2);
+        const rowHtml = `<div class="item-row">${line.account}</div>`;
+        const amtHtml = `<div class="item-row" style="text-align: right;">${amtText}</div>`;
+
+        if (isJournal) {
+            if (line.type === 'Dr') {
+                jvDrAccountsHtml += rowHtml;
+                jvDrAmountsHtml += amtHtml;
+                jvDrTotal += line.amount;
+            } else {
+                jvCrAccountsHtml += `<div class="item-row" style="padding-left: 15px;">To ${line.account}</div>`;
+                jvCrAmountsHtml += amtHtml;
+                jvCrTotal += line.amount;
+            }
+        } else {
+            // कैश रिसिप्ट/पेमेंट के लिए (Particulars को आप लाइन के नरेशन या अकाउंट नाम से भर सकते हैं)
+            particularsListHtml += `<div class="item-row">${line.particulars || tx.narration || '-'}</div>`;
+            accountsListHtml += rowHtml;
+            amountsListHtml += amtHtml;
+            totalAmt += line.amount;
+        }
+    });
+
+    try {
+        // बाहरी टेम्पलेट लोड करना
+        const response = await fetch('voucher-template.html');
+        if (!response.ok) throw new Error("टेम्पलेट फ़ाइल लोड नहीं हो सकी");
+        let html = await response.text();
+
+        // प्लेसहोल्डर्स को रिप्लेस करना
+        html = html
+            .replace(/{{voucherNo}}/g, tx.voucherNo)
+            .replace(/{{date}}/g, tx.date)
+            .replace(/{{voucherTitle}}/g, tx.voucherType.toUpperCase() + " VOUCHER")
+            .replace(/{{voucherType}}/g, tx.voucherType)
+            .replace(/{{narration}}/g, tx.narration || '')
+            .replace(/{{amountInWords}}/g, txTotalWords || '-')
+            // ग्रिड कंट्रोल्स
+            .replace(/{{cashGridDisplay}}/g, cashGridDisplay)
+            .replace(/{{journalGridDisplay}}/g, journalGridDisplay)
+            // कैश डेटा की मैपिंग
+            .replace(/{{particularsListHtml}}/g, particularsListHtml)
+            .replace(/{{accountsListHtml}}/g, accountsListHtml)
+            .replace(/{{amountsListHtml}}/g, amountsListHtml)
+            .replace(/{{totalAmt}}/g, totalAmt.toFixed(2))
+            // जर्नल डेटा की मैपिंग
+            .replace(/{{jvDrAccountsHtml}}/g, jvDrAccountsHtml)
+            .replace(/{{jvDrAmountsHtml}}/g, jvDrAmountsHtml)
+            .replace(/{{jvDrTotal}}/g, jvDrTotal.toFixed(2))
+            .replace(/{{jvCrAccountsHtml}}/g, jvCrAccountsHtml)
+            .replace(/{{jvCrAmountsHtml}}/g, jvCrAmountsHtml)
+            .replace(/{{jvCrTotal}}/g, jvCrTotal.toFixed(2));
+
+        // नया प्रिंट विंडो खोलें और रेंडर करें
+        const printWindow = window.open('', '_blank', 'width=850,height=700');
+        printWindow.document.write(html);
+        printWindow.document.close();
+
+    } catch (error) {
+        console.error("प्रिंट एरर:", error);
+        alert("प्रिंट करने में कोई समस्या आई: " + error.message);
+    }
 };
 
   </script>
