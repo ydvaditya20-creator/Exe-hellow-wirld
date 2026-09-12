@@ -260,7 +260,207 @@
 </div>
 
 <!-- Linking External JavaScript File -->
-<script>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/2.3.4/js/dataTables.min.js"></script>
+
+
+    <script>
+
+        $(document).ready(function () {
+
+            /*
+             * Original header की copy बनाना
+             * ताकि दूसरी row में filters आ सकें
+             */
+
+            $('#voucherTable thead tr')
+                .clone(false)
+                .addClass('filters')
+                .appendTo('#voucherTable thead');
+
+
+            /*
+             * DataTable initialize
+             */
+
+            var table = $('#voucherTable').DataTable({
+
+                orderCellsTop: true,
+
+                pageLength: 10,
+
+                lengthMenu: [
+                    [10, 25, 50, 100, -1],
+                    [10, 25, 50, 100, "सभी"]
+                ],
+
+                language: {
+                    search: "सर्च:",
+                    lengthMenu: "_MENU_ रिकॉर्ड",
+                    info: "_START_ से _END_ / कुल _TOTAL_",
+                    infoEmpty: "कोई रिकॉर्ड नहीं",
+                    zeroRecords: "कोई रिकॉर्ड नहीं मिला",
+                    paginate: {
+                        first: "पहला",
+                        last: "अंतिम",
+                        next: "अगला",
+                        previous: "पिछला"
+                    }
+                },
+
+
+                /*
+                 * Filter inputs बनाना
+                 */
+
+                initComplete: function () {
+
+                    var api = this.api();
+
+                    api.columns().every(function (colIdx) {
+
+                        var column = this;
+
+                        var cell = $('.filters th').eq(colIdx);
+
+                        var title = $(api.column(colIdx).header()).text().trim();
+
+
+                        /*
+                         * Action column में filter नहीं
+                         */
+
+                        if (title === 'एक्शन') {
+
+                            cell.html('');
+
+                            return;
+                        }
+
+
+                        /*
+                         * Input बनाना
+                         */
+
+                        cell.html(
+                            '<input type="text" ' +
+                            'placeholder="' + title + ' खोजें">'
+                        );
+
+
+                        /*
+                         * Filter event
+                         */
+
+                        $('input', cell)
+                            .on('keyup change clear', function () {
+
+                                if (column.search() !== this.value) {
+
+                                    column
+                                        .search(this.value)
+                                        .draw();
+
+                                }
+
+                            });
+
+                    });
+
+                },
+
+
+                /*
+                 * हर बार table draw होने पर
+                 * filtered rows का total निकालना
+                 */
+
+                drawCallback: function () {
+
+                    updateSummary();
+
+                }
+
+            });
+
+
+            /*
+             * Summary update function
+             */
+
+            function updateSummary() {
+
+                var totalDr = 0;
+                var totalCr = 0;
+
+
+                /*
+                 * केवल filtered rows
+                 */
+
+                table.rows({
+                    search: 'applied'
+                }).every(function () {
+
+                    var row = this.node();
+
+                    var drValue =
+                        parseFloat(
+                            $(row)
+                                .find('.dr-amount')
+                                .attr('data-val')
+                        ) || 0;
+
+
+                    var crValue =
+                        parseFloat(
+                            $(row)
+                                .find('.cr-amount')
+                                .attr('data-val')
+                        ) || 0;
+
+
+                    totalDr += drValue;
+                    totalCr += crValue;
+
+                });
+
+
+                /*
+                 * Summary box update
+                 */
+
+                $('#total-debit').text(
+                    '₹' + totalDr.toLocaleString('en-IN', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    })
+                );
+
+
+                $('#total-credit').text(
+                    '₹' + totalCr.toLocaleString('en-IN', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    })
+                );
+
+            }
+
+
+            /*
+             * Initial total
+             */
+
+            updateSummary();
+
+        });
+
+    
+
   
   // ⚠️ आपकी Google Apps Script की Web App URL (यहाँ पहले से फिक्स कर दी गई है)
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbywhTtuv16XG7GmWt6FcpRW6VaMB8X9zIMTKRJ4OB1YvTPYb5ejWnxNi49_vodCoaKN/exec";
