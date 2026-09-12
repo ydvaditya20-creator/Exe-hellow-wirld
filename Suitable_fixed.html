@@ -873,7 +873,7 @@ window.printVucher = function(vNo) {
     `);
     printWindow.document.close();
 };
-window.printVoucher = async function(vNo) {
+window.printVucher = async function(vNo) {
     const tx = savedTransactions.find(t => t.voucherNo === vNo);
     if (!tx) {
         alert("वाउचर का डेटा नहीं मिला!");
@@ -965,6 +965,80 @@ window.printVoucher = async function(vNo) {
     } catch (error) {
         console.error("प्रिंट एरर:", error);
         alert("प्रिंट करने में कोई समस्या आई: " + error.message);
+    }
+};
+window.printVoucher = async function(vNo) {
+    const tx = savedTransactions.find(t => t.voucherNo === vNo);
+    if (!tx) return alert("वाउचर का डेटा नहीं मिला!");
+
+    const isJournal = tx.voucherType.toUpperCase() === 'JOURNAL';
+
+    // 1. CASH / RECEIPT / PAYMENT HTML होल्डर
+    let particularsHtml = '', accountsHtml = '', amountsHtml = '', totalAmt = 0;
+    // 2. JOURNAL HTML होल्डर
+    let jvDrAccHtml = '', jvDrAmtHtml = '', jvCrAccHtml = '', jvCrAmtHtml = '', jvDrTotal = 0, jvCrTotal = 0;
+
+    tx.lines.forEach(line => {
+        const amtText = '₹' + line.amount.toFixed(2);
+        if (isJournal) {
+            if (line.type === 'Dr') {
+                jvDrAccHtml += `<div class="item-row">${line.account}</div>`;
+                jvDrAmtHtml += `<div class="item-row text-right">${amtText}</div>`;
+                jvDrTotal += line.amount;
+            } else {
+                jvCrAccHtml += `<div class="item-row" style="padding-left: 20px;">To <b>${line.account}</b></div>`;
+                jvCrAmtHtml += `<div class="item-row text-right">${amtText}</div>`;
+                jvCrTotal += line.amount;
+            }
+        } else {
+            particularsHtml += `<div class="item-row">${line.particulars || tx.narration || '-'}</div>`;
+            accountsHtml += `<div class="item-row">${line.account}</div>`;
+            amountsHtml += `<div class="item-row text-right">${amtText}</div>`;
+            totalAmt += line.amount;
+        }
+    });
+
+    // 🟢 आपके फ़ंक्शन (numberToWords) का उपयोग करके अमाउंट को शब्दों में बदलना
+    // यदि जर्नल है तो डेबिट टोटल का वर्ड बनेगा, नहीं तो कैश ग्रिड के टोटल का
+    const finalAmount = isJournal ? jvDrTotal : totalAmt;
+    let txTotalWords = '-';
+    
+    if (typeof numberToWords === 'function') {
+        txTotalWords = numberToWords(finalAmount);
+    } else {
+        console.warn("numberToWords function function global scope में नहीं मिला!");
+    }
+
+    try {
+        const response = await fetch('voucher-template.html');
+        if (!response.ok) throw new Error("टेम्पलेट फ़ाइल लोड नहीं हो सकी");
+        let html = await response.text();
+
+        html = html
+            .replace(/{{voucherNo}}/g, tx.voucherNo)
+            .replace(/{{date}}/g, tx.date)
+            .replace(/{{voucherTitle}}/g, tx.voucherType.toUpperCase() + " VOUCHER")
+            .replace(/{{narration}}/g, tx.narration || '')
+            // 🟢 यहाँ शब्दों में रकम इंजेक्ट हो रही है
+            .replace(/{{amountInWords}}/g, txTotalWords)
+            .replace(/{{cashGridDisplay}}/g, isJournal ? 'none' : 'flex')
+            .replace(/{{journalGridDisplay}}/g, isJournal ? 'flex' : 'none')
+            .replace(/{{particularsListHtml}}/g, particularsHtml)
+            .replace(/{{accountsListHtml}}/g, accountsHtml)
+            .replace(/{{amountsListHtml}}/g, amountsHtml)
+            .replace(/{{totalAmt}}/g, totalAmt.toFixed(2))
+            .replace(/{{jvDrAccountsHtml}}/g, jvDrAccHtml)
+            .replace(/{{jvDrAmountsHtml}}/g, jvDrAmtHtml)
+            .replace(/{{jvDrTotal}}/g, jvDrTotal.toFixed(2))
+            .replace(/{{jvCrAccountsHtml}}/g, jvCrAccHtml)
+            .replace(/{{jvCrAmountsHtml}}/g, jvCrAmtHtml)
+            .replace(/{{jvCrTotal}}/g, jvCrTotal.toFixed(2));
+
+        const printWindow = window.open('', '_blank', 'width=1000,height=700');
+        printWindow.document.write(html);
+        printWindow.document.close();
+    } catch (e) {
+        alert("एरर: " + e.message);
     }
 };
 
