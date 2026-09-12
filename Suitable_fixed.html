@@ -8,9 +8,187 @@
           href="https://cdn.datatables.net/2.3.4/css/dataTables.dataTables.min.css">
 
     <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 20px;
+            background-color: #f3f4f6;
+            color: #333;
+        }
+        h2, h3 {
+            text-align: center;
+            color: #1f2937;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .form-section, .sync-section {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            margin-bottom: 30px;
+        }
+        .sync-section {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+        .main-meta, .sync-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #4b5563;
+        }
+        input, select {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            background-color: #fff;
+        }
+        input[readonly] {
+            background-color: #e5e7eb;
+            font-weight: bold;
+            color: #374151;
+        }
+        .entry-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .add-row-btn {
+            background-color: #4b5563;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            margin-bottom: 15px;
+        }
+        .add-row-btn:hover { background-color: #374151; }
         
-    
+        .live-status {
+            display: flex;
+            justify-content: space-between;
+            background: #f3f4f6;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .match-alert { color: #10b981; }
+        .mismatch-alert { color: #ef4444; }
 
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .submit-btn:hover { background-color: #1d4ed8; }
+        .submit-btn:disabled { background-color: #9ca3af; cursor: not-allowed; }
+
+        .btn-success {
+            background-color: #16a34a;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .btn-success:hover { background-color: #15803d; }
+        .btn-secondary {
+            background-color: #4b5563;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #e5e7eb;
+            padding: 12px;
+            text-align: left;
+            font-size: 14px;
+            vertical-align: top;
+        }
+        th { background-color: #1f2937; color: white; }
+        tr:nth-child(even) { background-color: #f9fafb; }
+
+        #voucherTable thead tr.filters th {
+            background: #ffffff;
+            padding: 5px;
+        }
+        #voucherTable thead tr.filters input {
+            color: #333;
+            background: #fff;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+        }
+        #voucherTable_wrapper {
+            width: 100%;
+            overflow-x: auto;
+        }
+        
+        .dr-text { color: #2563eb; font-weight: 600; }
+        .cr-text { color: #db2777; font-weight: 600; padding-left: 20px; }
+        .narration { font-size: 12px; color: #6b7280; font-style: italic; margin-top: 5px; }
+        .v-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            font-size: 11px;
+            font-weight: bold;
+            border-radius: 4px;
+            color: white;
+            margin-top: 4px;
+        }
+        .v-Payment { background-color: #ef4444; }
+        .v-Receipt { background-color: #10b981; }
+        .v-Journal { background-color: #f59e0b; }
+        .v-Contra { background-color: #6366f1; }
+        
+        .btn-danger {
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-danger:hover { background-color: #dc2626; }
     </style>
 </head>
 <body>
