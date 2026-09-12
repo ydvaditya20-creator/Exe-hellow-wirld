@@ -1,0 +1,208 @@
+<div class="top-control-panel">
+    <div class="selector-group">
+        <label for="voucherTypeSelect">वाउचर का प्रकार चुनें (Voucher Type):</label>
+        <!-- वाउचर सेलेक्टर (बदला हुआ हिस्सा) -->
+<select id="voucherTypeSelect" class="master-select">
+	<option value="cash_recept">None</option>
+ 
+    <option value="cash_receipt">CASH RECEIPT VOUCHER</option>
+    <option value="cash_payment">CASH PAYMENT VOUCHER</option>
+    <option value="bank_payment">BANK PAYMENT VOUCHER</option>
+    <option value="bank_receipt">BANK RECEIPT VOUCHER</option>
+    <option value="journal_voucher">JOURNAL VOUCHER</option>
+</select>
+
+    </div>
+    <button id="printBtnMain" class="print-btn-main">Print Voucher</button>
+	<button id="saveHtmlBtn" class="save-html-btn" onclick="handleSaveHtmlVoucher()">Save Layout to Cloud</button>
+
+
+</div>
+	<div class="top-control-panel">
+    <details style="border: 1px solid #e1e4e8; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 15px 0; overflow: hidden;">
+        <summary style="padding: 14px 18px; background-color: #f6f8fa; border-bottom: 1px solid #e1e4e8; cursor: pointer; font-weight: 600; color: #24292e; user-select: none; outline: none;">
+            <b>Toggle File (Show/Hide)</b>
+        </summary>
+        <iframe src="Add%20new%20option.html" style="width: 950px; height: 400px; border: none; display: block; background: #ffffff;"></iframe>
+    </details>
+</div>
+<div class="top-control-panel">
+    <details style="border: 1px solid #e1e4e8; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 15px 0; overflow: hidden;">
+        <summary style="padding: 14px 18px; background-color: #f6f8fa; border-bottom: 1px solid #e1e4e8; cursor: pointer; font-weight: 600; color: #24292e; user-select: none; outline: none;">
+            <b>Toggle File (Show/Hide)</b>
+        </summary>
+        <iframe src="Suitable_fixed.html" style="width: 950px; height: 900px; border: none; display: block; background: #ffffff;"></iframe>
+    </details>
+</div>
+
+<!-- मुख्य वाउचर कार्ड -->
+<div class="voucher-card">
+    
+    <!-- हेडर भाग -->
+    <div class="header-container">
+        <div class="school-info">
+    <img src="IMG-20260912-WA0002.jpg" class="school-logo" alt="SHEMFORD">
+    
+</div>
+        <div class="voucher-title">
+            <h2 id="dynamicVoucherTitle">NULL VOUCHER</h2>
+            <p>SHEMFORD SCHOOL, Natwa Road, Mirzapur</p>
+        </div>
+    </div>
+
+    <!-- तारीख और वाउचर नंबर पट्टी -->
+    <div class="top-meta-strip">
+        <div class="meta-cell-date" style="padding-left:8px;">
+    DATE: <input type="date" id="vDate" class="no-border-input"  style="padding-left:8px;">
+    <span class="print-only-text" id="pDate" style="padding-left:8px;"></span>
+</div>
+        <div class="meta-cell-vno">
+            V.No. <input type="text" id="vNo" placeholder="यहाँ लिखें..." class="no-border-input" style="padding-left:8px;">
+            <span class="print-only-text" id="pNo"></span>
+        </div>
+    </div>
+
+    <!-- ================= 1. CASH RECEIPT VOUCHER GRID ================= -->
+    <div id="cashReceiptGrid" class="main-voucher-grid">
+        <!-- कॉलम 1: Sl.No. -->
+        <div class="voucher-column col-sl">
+            <div class="col-header">Sl.No.</div>
+            <div class="col-body">
+                <input type="text" id="vSlCash" placeholder="1" class="no-border-input text-center">
+                <span class="print-only-text" id="pSlCash"></span>
+            </div>
+        </div>
+
+        <!-- कॉलम 2: Particulars -->
+        <!-- 1. पुराना Particulars वाला सेक्शन (यहाँ datalist को वैसे ही रहने दें) -->
+<div class="voucher-column col-particulars">
+    <div class="col-header">PARTICULARS</div>
+    <div class="col-body-dynamic">
+        <div class="input-control-zone">
+            <!-- यह इनपुट भी particularsList से कनेक्टेड है -->
+            <input type="text" id="vPartInput" list="particularsList" placeholder="टाइप करें या चुनें..." class="column-input">
+            <datalist id="particularsList"></datalist>
+            <button id="addPartBtn" class="add-item-btn">+</button>
+        </div>
+        <div id="particularsDisplayList" class="items-list-container"></div>
+    </div>
+</div>
+
+
+
+        <!-- कॉलम 3: Head of Accounts -->
+        <div class="voucher-column col-accounts">
+            <div class="col-header">HEAD OF ACCOUNTS</div>
+            <div class="col-body-dynamic">
+                <div class="input-control-zone">
+                    <input type="text" id="vHeadSelectCash" list="headAccountsList" placeholder="टाइप करें या चुनें..." class="column-input" onkeypress="handleHeadEnter(event, 'cash')">
+    <datalist id="headAccountsList"></datalist>
+                </div>
+                <div id="accountsDisplayListCash" class="items-list-container"></div>
+				
+            </div><div class="total">TOTAL</div>
+        </div>
+
+        <!-- कॉलम 4: Amount -->
+        <div class="voucher-column col-amount">
+		
+            <div class="col-header">Amount</div>
+            <div class="col-body-dynamic">
+			<div  style="margin:2px"> </div>
+			<div class="gap" style="margin:10px"> </div>
+                <div id="amountsDisplayListCash" class="items-list-container"></div>
+            </div>
+            <div class="total" id="tAtCash">  0.00</div>
+        </div>
+    </div>
+
+    <!-- ================= 2. JOURNAL VOUCHER GRID ================= -->
+    <div id="journalVoucherGrid" class="main-voucher-grid" style="display:none">
+        <!-- [FIRST PART: DEBIT] -->
+        <div class="voucher-column col-sl-jv">
+            <div class="col-header">Sl.No.</div>
+            <div class="col-body">
+                <input type="text" id="vSlJV1" placeholder="1" class="no-border-input text-center">
+                <span class="print-only-text" id="pSlJV1"></span>
+            </div>
+        </div>
+        
+        <div class="voucher-column col-accounts-jv">
+            <div class="col-header">HEAD OF ACCOUNTS (Dr.)</div>
+            <div class="col-body-dynamic">
+                <div class="input-control-zone">
+                    <input type="text" id="vHeadSelectJV1" list="headAccountsList" placeholder="टाइप करें या चुनें..." class="column-input" onkeypress="handleHeadEnter(event, 'jv_dr')">
+
+                </div>
+                <div id="accountsDisplayListJV1" class="items-list-container"></div>
+            </div><div class="total">TOTAL</div>
+        </div>
+
+        <div class="voucher-column col-amount-jv">
+            <div class="col-header">Amount (Dr.)</div>
+            <div class="col-body-dynamic">
+			<div  style="margin:2px"> </div>
+			<div class="gap" style="margin:10px"> </div>
+                <div id="amountsDisplayListJV1" class="items-list-container"></div>
+            </div>
+            <div class="total" id="tAtJV1">  0.00</div>
+        </div>
+        
+        <!-- [SECOND PART: CREDIT] -->
+        <div class="voucher-column col-sl-jv" style="border-left: 2px solid #000;">
+            <div class="col-header">Sl.No.</div>
+            <div class="col-body">
+                <input type="text" id="vSlJV2" placeholder="1" class="no-border-input text-center">
+                <span class="print-only-text" id="pSlJV2"></span>
+            </div>
+        </div>
+
+        <div class="voucher-column col-accounts-jv">
+            <div class="col-header">HEAD OF ACCOUNTS (Cr.)</div>
+            <div class="col-body-dynamic">
+                <div class="input-control-zone">
+                    <input type="text" id="vHeadSelectJV2" list="headAccountsList" placeholder="टाइप करें या चुनें..." class="column-input" onkeypress="handleHeadEnter(event, 'jv_cr')">
+
+                </div>
+                <div id="accountsDisplayListJV2" class="items-list-container"></div>
+            </div><div class="total">TOTAL</div>
+        </div>
+
+        <div class="voucher-column col-amount-jv">
+            <div class="col-header">Amount (Cr.)</div>
+            <div class="col-body-dynamic">
+				<div  style="margin:2px"> </div>
+			<div class="gap" style="margin:10px"> </div>
+                <div id="amountsDisplayListJV2" class="items-list-container"></div>
+            </div>
+            <div class="total" id="tAtJV2">  0.00</div>
+        </div>
+      
+    </div>
+
+    <!-- 2. आपका Narration वाला सेक्शन (यहाँ से अलग से datalist हटा दें, बस list attribute रखें) -->
+<div class="narration-section" id="dynamicBottomSection" style="display: flex;">
+    <div class="narration-label" id="bottomSectionLabel" style="margin-left:8px">Narration:</div>
+    <div class="narration-value">
+        <!-- यह इनपुट भी अब उसी particularsList से डेटा उठाएगा -->
+        <input type="text" id="vNarrationInput" list="particularsList" placeholder="यहाँ विवरण लिखें..." class="no-border-input">
+        <span class="print-only-text" id="pNarration" style="padding-right:8px;"></span>
+    </div>
+</div>
+
+
+
+    <!-- शब्दों में रकम -->
+    <div class="words-section">
+        AMOUNT'S (IN WORDS) Rs. : <span id="vWords" class="words-output"></span>
+    </div>
+
+    <!-- 4 सिग्नेचर कॉलम -->
+    <div class="signature-section" id="sign">
+        <div class="sig-cell" id="pre">Prepared By</div>
+        <div class="sig-cell" id="pay">Payment By</div>
+        <div class="sig-cell" id="apr">Approved By</div>
+        <div class="sig-cell" id="rec">Receipt By</div>
+    </div>
+
+</div>
