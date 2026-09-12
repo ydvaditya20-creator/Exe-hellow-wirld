@@ -502,30 +502,38 @@ async function handleAddNewOption(category, voucherType, newValue) {
 }
 // 6. HTML टेक्स्ट वाउचर को तीसरे टैब में सेव करने का फंक्शन
 async function handleSaveHtmlVoucher() {
-    // A. मुख्य वाउचर कार्ड की कॉपी (Clone) बनाएं
-    const voucherClone = document.getElementById("cashReceiptGrid").closest('.voucher-card').cloneNode(true);
+    const saveBtn = document.getElementById("saveHtmlBtn");
+    const originalText = saveBtn.innerText;
     
-    // B. सारे इनपुट/सिलेक्ट बॉक्स को उनके टेक्स्ट से बदलें
-    const inputs = voucherClone.querySelectorAll('input, select, textarea');
-    inputs.forEach(input => {
-        const textSpan = document.createElement('span');
-        textSpan.style.paddingLeft = '8px';
-        textSpan.style.fontWeight = 'bold';
+    // बटन को लॉक करें ताकि डबल सबमिशन न हो
+    saveBtn.innerText = "Saving to Cloud...";
+    saveBtn.disabled = true;
+
+    try {
+        // 1. आपके मुख्य वाउचर कार्ड की एक कॉपी (Clone) बनाएं
+        const voucherClone = document.getElementById("cashReceiptGrid").closest('.voucher-card').cloneNode(true);
         
-        if (input.tagName === 'SELECT') {
-            textSpan.innerText = input.options[input.selectedIndex].text;
-        } else {
-            textSpan.innerText = input.value || input.placeholder || '';
-        }
-        input.parentNode.replaceChild(textSpan, input);
-    });
+        // 2. इस कॉपी के अंदर के सारे इनपुट/सिलेक्ट बॉक्स को उनके लिखे हुए टेक्स्ट से बदलें
+        const inputs = voucherClone.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            const textSpan = document.createElement('span');
+            textSpan.style.paddingLeft = '8px';
+            textSpan.style.fontWeight = 'bold';
+            
+            if (input.tagName === 'SELECT') {
+                textSpan.innerText = input.options[input.selectedIndex].text;
+            } else {
+                textSpan.innerText = input.value || input.placeholder || '';
+            }
+            input.parentNode.replaceChild(textSpan, input);
+        });
 
-    // C. एक्स्ट्रा बटन्स और इनपुट जोन हटाएं
-    const exclusions = voucherClone.querySelectorAll('button, .input-control-zone');
-    exclusions.forEach(el => el.remove());
+        // 3. एक्स्ट्रा बटन्स और इनपुट ज़ोन हटाएं
+        const exclusions = voucherClone.querySelectorAll('button, .input-control-zone');
+        exclusions.forEach(el => el.remove());
 
-    // D. पूरा HTML स्ट्रक्चर टेक्स्ट तैयार करें
-    const fullHtmlTextTemplate = `
+        // 4. पूरा HTML स्ट्रक्चर टेक्स्ट तैयार करें
+        const fullHtmlTextTemplate = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -542,18 +550,17 @@ async function handleSaveHtmlVoucher() {
 </body>
 </html>`.trim();
 
-    // E. मेटाडेटा निकालें
-    const rawDate = document.getElementById("vDate").value;
-    const voucherDate = rawDate ? new Date(rawDate).toLocaleDateString('en-IN') : '--/--/----';
-    const voucherNo = document.getElementById("vNo").value || 'N/A';
-    const voucherType = document.getElementById("dynamicVoucherTitle").innerText;
+        // 5. मेटाडेटा निकालें
+        const rawDate = document.getElementById("vDate").value;
+        const voucherDate = rawDate ? new Date(rawDate).toLocaleDateString('en-IN') : '--/--/----';
+        const voucherNo = document.getElementById("vNo").value || 'N/A';
+        const voucherType = document.getElementById("dynamicVoucherTitle").innerText;
 
-    try {
-        // F. आपके वर्तमान SCRIPT_URL पर POST रिक्वेस्ट भेजना (CORS से बचने के लिए text/plain में JSON भेजना सबसे सेफ है)
+        // 6. आपके वर्तमान SCRIPT_URL पर POST रिक्वेस्ट भेजना
         let response = await fetch(SCRIPT_URL, {
             method: "POST",
             body: JSON.stringify({
-                category: "HtmlVoucher", // तीसरे टैब को पहचानने के लिए नई कैटेगरी
+                category: "HtmlVoucher", // ऐप्स स्क्रिप्ट इसे पहचान कर तीसरे टैब में डालेगा
                 date: voucherDate,
                 voucherNo: voucherNo,
                 voucherType: voucherType,
@@ -561,11 +568,14 @@ async function handleSaveHtmlVoucher() {
             })
         });
         
-        // no-cors मोड होने पर या सिंपल रेस्पॉन्स हैंडलिंग
-        alert("🎉 HTML वाउचर टेक्स्ट तीसरे टैब में सफलतापूर्वक सेव हो गया है!");
+        alert("🎉 पूरा HTML लेआउट टेक्स्ट Google Sheet के 'SavedVouchers' टैब में सेव हो गया है!");
     } catch (error) {
         console.error("HTML Voucher save karne mein error aaya:", error);
-        alert("❌ सेव करने में समस्या आई।");
+        alert("❌ सेव करने में कोई समस्या आई। कृपया ऐप्स स्क्रिप्ट डिप्लॉयमेंट चेक करें।");
+    } finally {
+        // बटन को वापस सामान्य स्थिति में लाएं
+        saveBtn.innerText = originalText;
+        saveBtn.disabled = false;
     }
 }
 
