@@ -284,199 +284,8 @@
 
     <script>
 
-        $(document).ready(function () {
-
-            /*
-             * Original header की copy बनाना
-             * ताकि दूसरी row में filters आ सकें
-             */
-
-            $('#voucherTable thead tr')
-                .clone(false)
-                .addClass('filters')
-                .appendTo('#voucherTable thead');
-
-
-            /*
-             * DataTable initialize
-             */
-
-            var table = $('#voucherTable').DataTable({
-
-                orderCellsTop: true,
-
-                pageLength: 10,
-
-                lengthMenu: [
-                    [10, 25, 50, 100, -1],
-                    [10, 25, 50, 100, "सभी"]
-                ],
-
-                language: {
-                    search: "सर्च:",
-                    lengthMenu: "_MENU_ रिकॉर्ड",
-                    info: "_START_ से _END_ / कुल _TOTAL_",
-                    infoEmpty: "कोई रिकॉर्ड नहीं",
-                    zeroRecords: "कोई रिकॉर्ड नहीं मिला",
-                    paginate: {
-                        first: "पहला",
-                        last: "अंतिम",
-                        next: "अगला",
-                        previous: "पिछला"
-                    }
-                },
-
-
-                /*
-                 * Filter inputs बनाना
-                 */
-
-                initComplete: function () {
-
-                    var api = this.api();
-
-                    api.columns().every(function (colIdx) {
-
-                        var column = this;
-
-                        var cell = $('.filters th').eq(colIdx);
-
-                        var title = $(api.column(colIdx).header()).text().trim();
-
-
-                        /*
-                         * Action column में filter नहीं
-                         */
-
-                        if (title === 'एक्शन') {
-
-                            cell.html('');
-
-                            return;
-                        }
-
-
-                        /*
-                         * Input बनाना
-                         */
-
-                        cell.html(
-                            '<input type="text" ' +
-                            'placeholder="' + title + ' खोजें">'
-                        );
-
-
-                        /*
-                         * Filter event
-                         */
-
-                        $('input', cell)
-                            .on('keyup change clear', function () {
-
-                                if (column.search() !== this.value) {
-
-                                    column
-                                        .search(this.value)
-                                        .draw();
-
-                                }
-
-                            });
-
-                    });
-
-                },
-
-
-                /*
-                 * हर बार table draw होने पर
-                 * filtered rows का total निकालना
-                 */
-
-                drawCallback: function () {
-
-                    updateSummary();
-
-                }
-
-            });
-
-
-            /*
-             * Summary update function
-             */
-
-            function updateSummary() {
-
-                var totalDr = 0;
-                var totalCr = 0;
-
-
-                /*
-                 * केवल filtered rows
-                 */
-
-                table.rows({
-                    search: 'applied'
-                }).every(function () {
-
-                    var row = this.node();
-
-                    var drValue =
-                        parseFloat(
-                            $(row)
-                                .find('.dr-amount')
-                                .attr('data-val')
-                        ) || 0;
-
-
-                    var crValue =
-                        parseFloat(
-                            $(row)
-                                .find('.cr-amount')
-                                .attr('data-val')
-                        ) || 0;
-
-
-                    totalDr += drValue;
-                    totalCr += crValue;
-
-                });
-
-
-                /*
-                 * Summary box update
-                 */
-
-                $('#total-debit').text(
-                    '₹' + totalDr.toLocaleString('en-IN', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                    })
-                );
-
-
-                $('#total-credit').text(
-                    '₹' + totalCr.toLocaleString('en-IN', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                    })
-                );
-
-            }
-
-
-            /*
-             * Initial total
-             */
-
-            updateSummary();
-
-        });
-
-    
-
-  
+        
+                
   // ⚠️ आपकी Google Apps Script की Web App URL (यहाँ पहले से फिक्स कर दी गई है)
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbywhTtuv16XG7GmWt6FcpRW6VaMB8X9zIMTKRJ4OB1YvTPYb5ejWnxNi49_vodCoaKN/exec";
 
@@ -653,9 +462,151 @@ document.getElementById('journalForm').addEventListener('submit', function(e) {
         saveBtn.disabled = false;
     });
 });
+function renderHistory() {
+    const tbody = document.getElementById('journalHistoryBody');
+    tbody.innerHTML = '';
+    
+    // 1. अगर पहले से DataTable चालू है, तो उसे और उसके पुराने फिल्टर्स को पूरी तरह डिलीट करें
+    if ($.fn.DataTable.isDataTable('#voucherTable')) {
+        $('#voucherTable').DataTable().destroy();
+        $('#voucherTable thead .filters').remove(); 
+    }
+    
+    if(savedTransactions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#6b7280;">कोई रिकॉर्ड नहीं मिला!</td></tr>';
+        return;
+    }
+
+    savedTransactions.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+    savedTransactions.forEach((tx) => {
+        let drLines = tx.lines.filter(l => l.type === 'Dr');
+        let crLines = tx.lines.filter(l => l.type === 'Cr');
+        let allOrderedLines = [...drLines, ...crLines];
+
+        allOrderedLines.forEach((line, index) => {
+            const tr = document.createElement('tr');
+            
+            // विवरण (Narration) को आख़िरी लाइन में मर्ज करने के लिए
+            const isLastLine = (index === allOrderedLines.length - 1);
+            const narrationHTML = isLastLine ? `<br><div style="font-size:12px; color:#4b5563; margin-top:4px; font-style:italic;"><strong>विवरण:</strong> (${tx.narration || '-'})</div>` : '';
+
+            if (index === 0) {
+                tr.innerHTML = `
+                    <td style="font-weight:600; vertical-align:top;">
+                        ${tx.voucherNo}<br><span style="font-weight:normal; font-size:12px; color:#6b7280;">${tx.date}</span><br><span class="v-badge v-${tx.voucherType}">${tx.voucherType}</span>
+                    </td>
+                    <td style="vertical-align:top;">
+                        <span class="${line.type === 'Dr' ? 'dr-text' : 'cr-text'}">${line.type === 'Cr' ? 'To ' : ''}${line.account}</span>
+                        ${line.type === 'Dr' ? '<span style="float:right; font-weight:bold;">Dr.</span>' : ''}
+                        ${narrationHTML}
+                    </td>
+                    <td class="dr-amount" data-val="${line.type === 'Dr' ? line.amount : 0}" style="vertical-align:top;">${line.type === 'Dr' ? '₹' + line.amount.toFixed(2) : '-'}</td>
+                    <td class="cr-amount" data-val="${line.type === 'Cr' ? line.amount : 0}" style="vertical-align:top;">${line.type === 'Cr' ? '₹' + line.amount.toFixed(2) : '-'}</td>
+                    <td style="text-align:center; vertical-align:top;">
+                        <div style="display:flex; flex-direction:column; gap:5px; align-items:center;">
+                            <button class="btn-secondary" style="padding:4px 8px; font-size:12px; background-color:#2563eb; width:70px;" onclick="editTransaction('${tx.voucherNo}')">✏️ एडिट</button>
+                            <button class="btn-secondary" style="padding:4px 8px; font-size:12px; background-color:#0ea5e9; width:70px;" onclick="printVoucher('${tx.voucherNo}')">🖨️ प्रिंट</button>
+                            <button class="btn-danger" style="padding:4px 8px; font-size:12px; width:70px;" onclick="cloudDeleteTransaction('${tx.voucherNo}')">❌ डिलीट</button>
+                        </div>
+                    </td>
+                `;
+            } else {
+                tr.innerHTML = `
+                    <td style="color: transparent; font-size: 0px; user-select:none;">
+                        ${tx.voucherNo} ${tx.date} ${tx.voucherType}
+                    </td>
+                    <td style="vertical-align:top;">
+                        <span class="${line.type === 'Dr' ? 'dr-text' : 'cr-text'}">${line.type === 'Cr' ? 'To ' : ''}${line.account}</span>
+                        ${line.type === 'Dr' ? '<span style="float:right; font-weight:bold;">Dr.</span>' : ''}
+                        ${narrationHTML}
+                    </td>
+                    <td class="dr-amount" data-val="${line.type === 'Dr' ? line.amount : 0}" style="vertical-align:top;">${line.type === 'Dr' ? '₹' + line.amount.toFixed(2) : '-'}</td>
+                    <td class="cr-amount" data-val="${line.type === 'Cr' ? line.amount : 0}" style="vertical-align:top;">${line.type === 'Cr' ? '₹' + line.amount.toFixed(2) : '-'}</td>
+                    <td></td>
+                `;
+            }
+            tbody.appendChild(tr);
+        });
+    });
+
+    // 2. पॉप-अप अलर्ट्स को बाईपास करें
+    $.fn.dataTable.ext.errMode = 'throw'; 
+
+    // 3. डेटा लोड होने के बाद टेबल को इनिशियलाइज़ करें
+    initializeDataTable();
+}
+
+// DataTable इनिशियलाइज़ेशन फ़ंक्शन (इसमें आपकी पुरानी सेटिंग्स और हिंदी भाषा भी शामिल है)
+function initializeDataTable() {
+    if ($('#voucherTable thead tr').length === 1) {
+        $('#voucherTable thead tr').clone(false).addClass('filters').appendTo('#voucherTable thead');
+    }
+
+    var table = $('#voucherTable').DataTable({
+        orderCellsTop: true,
+        destroy: true,
+        pageLength: 10,
+        lengthMenu: [
+            [10, 25, 50, 100, -1],
+            [10, 25, 50, 100, "सभी"]
+        ],
+        language: {
+            search: "सर्च:",
+            lengthMenu: "_MENU_ रिकॉर्ड",
+            info: "_START_ से _END_ / कुल _TOTAL_",
+            infoEmpty: "कोई रिकॉर्ड नहीं",
+            zeroRecords: "कोई रिकॉर्ड नहीं मिला",
+            paginate: {
+                first: "पहला",
+                last: "अंतिम",
+                next: "अगला",
+                previous: "पिछला"
+            }
+        },
+        initComplete: function() {
+            var api = this.api();
+            api.columns().every(function(colIdx) {
+                var column = this;
+                var cell = $('.filters th').eq(colIdx);
+                var title = $(api.column(colIdx).header()).text().trim();
+
+                if (title === 'एक्शन' || title === '') {
+                    cell.html('');
+                    return;
+                }
+
+                cell.html('<input type="text" style="width:100%; box-sizing:border-box; padding:4px;" placeholder="' + title + ' खोजें">');
+
+                $('input', cell).on('keyup change clear', function() {
+                    if (column.search() !== this.value) {
+                        column.search(this.value).draw();
+                    }
+                });
+            });
+        },
+        drawCallback: function() {
+            var api = this.api();
+            var totalDr = 0;
+            var totalCr = 0;
+
+            api.rows({ search: 'applied' }).every(function() {
+                var row = this.node();
+                var drValue = parseFloat($(row).find('.dr-amount').attr('data-val')) || 0;
+                var crValue = parseFloat($(row).find('.cr-amount').attr('data-val')) || 0;
+                totalDr += drValue;
+                totalCr += crValue;
+            });
+
+            // इंडियन करेंसी फॉर्मेट (₹) में समरी बॉक्स अपडेट करना
+            $('#total-debit').text('₹' + totalDr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+            $('#total-credit').text('₹' + totalCr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        }
+    });
+}
 
 // 📋 इतिहास टेबल रेंडर करना (एडिट और डिलीट बटन के साथ)
-function renderHistory() {
+function renderHitory() {
     const tbody = document.getElementById('journalHistoryBody');
     tbody.innerHTML = '';
     
