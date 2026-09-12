@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Double Entry System with Cloud Sync</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 20px;
+            background-color: #f3f4f6;
+            color: #333;
+        }
+        h2, h3 {
+            text-align: center;
+            color: #1f2937;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .form-section, .sync-section {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            margin-bottom: 30px;
+        }
+        .sync-section {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+        .main-meta, .sync-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #4b5563;
+        }
+        input, select {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            background-color: #fff;
+        }
+        input[readonly] {
+            background-color: #e5e7eb;
+            font-weight: bold;
+            color: #374151;
+        }
+        .entry-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .add-row-btn {
+            background-color: #4b5563;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            margin-bottom: 15px;
+        }
+        .add-row-btn:hover { background-color: #374151; }
+        
+        .live-status {
+            display: flex;
+            justify-content: space-between;
+            background: #f3f4f6;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .match-alert { color: #10b981; }
+        .mismatch-alert { color: #ef4444; }
+
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .submit-btn:hover { background-color: #1d4ed8; }
+        .submit-btn:disabled { background-color: #9ca3af; cursor: not-allowed; }
+
+        .btn-success {
+            background-color: #16a34a;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .btn-success:hover { background-color: #15803d; }
+        .btn-secondary {
+            background-color: #4b5563;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #e5e7eb;
+            padding: 12px;
+            text-align: left;
+            font-size: 14px;
+            vertical-align: top;
+        }
+        th { background-color: #1f2937; color: white; }
+        tr:nth-child(even) { background-color: #f9fafb; }
+        
+        .dr-text { color: #2563eb; font-weight: 600; }
+        .cr-text { color: #db2777; font-weight: 600; padding-left: 20px; }
+        .narration { font-size: 12px; color: #6b7280; font-style: italic; margin-top: 5px; }
+        .v-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            font-size: 11px;
+            font-weight: bold;
+            border-radius: 4px;
+            color: white;
+            margin-top: 4px;
+        }
+        .v-Payment { background-color: #ef4444; }
+        .v-Receipt { background-color: #10b981; }
+        .v-Journal { background-color: #f59e0b; }
+        .v-Contra { background-color: #6366f1; }
+        
+        .btn-danger {
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-danger:hover { background-color: #dc2626; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📊 Advanced Double Entry System with Google Sheet</h2>
+    <p style="text-align: center; color: #6b7280; margin-top: -10px;">(हाइब्रिड सर्च-ड्रॉपडाउन और लाइव क्लाउड सिंक सक्रिय)</p>
+
+    <!-- Main Transaction Form -->
+    <div class="form-section">
+        <form id="journalForm">
+            <div class="main-meta">
+                <div class="form-group">
+                    <label for="vNo">वाउचर नंबर (Voucher No.)</label>
+                    <input type="text" id="vNo" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="vType">वाउचर प्रकार (Voucher Type)</label>
+                    <select id="vType" required>
+                        <option value="Receipt">Receipt (प्राप्ति)</option>
+                        <option value="Payment">Payment (भुगतान)</option>
+                        <option value="Journal">Journal (जर्नल)</option>
+                        <option value="Contra">Contra (कॉन्ट्रा)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="txDate">तारीख (Date)</label>
+                    <input type="date" id="txDate" required>
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label for="txNarration">नरेशन/विवरण (Narration)</label>
+                    <!-- सर्च + टाइप सपोर्टेड नरेशन बॉक्स -->
+                    <input type="text" id="txNarration" list="narrationList" placeholder="उदा. Being goods sold and cash received" required>
+                    <datalist id="narrationList"></datalist>
+                </div>
+            </div>
+
+            <div id="dynamicRowsContainer">
+                <label style="display:block; margin-bottom: 8px; font-weight: bold;">खाता पंक्तियाँ (Account Lines)</label>
+                <!-- Dynamic Rows will appear here from script.js -->
+            </div>
+
+            <button type="button" class="add-row-btn" onclick="addNewRow()">➕ लाइन जोड़ें (Add Line)</button>
+
+            <!-- Live Validation Box -->
+            <div class="live-status">
+                <div>लाइव डेबिट: ₹<span id="liveDr">0.00</span></div>
+                <div>लाइव क्रेडिट: ₹<span id="liveCr">0.00</span></div>
+                <div id="liveMatchStatus" class="mismatch-alert">अंतर: ₹0.00 (Unbalanced)</div>
+            </div>
+
+            <button type="submit" id="saveTxBtn" class="submit-btn" disabled>जर्नल प्रविष्टि सुरक्षित करें (Save Entry)</button>
+        </form>
+    </div>
+
+    <!-- Google Sheets Sync Section -->
+    <div class="sync-section">
+        <h4 style="margin-top: 0; color: #16a34a; font-size: 16px;">🌐 Google Sheets Daybook Integration Manager</h4>
+        <div class="sync-meta" style="grid-template-columns: 1fr auto;">
+            <div class="form-group">
+                <label for="syncDate">सिंक करने के लिए तारीख चुनें (Select Date)</label>
+                <input type="date" id="syncDate" style="max-width: 300px;">
+            </div>
+            <div class="form-group" style="justify-content: flex-end; flex-direction: row; gap: 10px; margin-top: auto;">
+                <button type="button" class="btn-secondary" onclick="exportDateRecordsToCSV()">📄 CSV बैकअप</button>
+                <button type="button" class="btn-success" onclick="syncRecordsToGoogleSheet()">🚀 Google Sheet ('daybook') में भेजें</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ledger / Journal Records Table -->
+    <h3>📋 जर्नल प्रविष्टि इतिहास (Journal Entry History)</h3>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%;">वाउचर / तारीख</th>
+                <th style="width: 50%;">विवरण (Particulars)</th>
+                <th style="width: 15%;">डेबिट (Dr. ₹)</th>
+                <th style="width: 15%;">क्रेडिट (Cr. ₹)</th>
+                <th style="width: 5%;">एक्शन</th>
+            </tr>
+        </thead>
+        <tbody id="journalHistoryBody">
+            <!-- Saved transactions will be injected here -->
+        </tbody>
+    </table>
+</div>
+
+<!-- Linking External JavaScript File -->
+<script>
+  
+  // ⚠️ आपकी Google Apps Script की Web App URL (यहाँ पहले से फिक्स कर दी गई है)
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbywhTtuv16XG7GmWt6FcpRW6VaMB8X9zIMTKRJ4OB1YvTPYb5ejWnxNi49_vodCoaKN/exec";
+
+  
+
+let accountsList = ["Cash A/c", "Bank A/c", "Sales A/c", "Purchase A/c"];
+let narrationsList = ["Being goods sold for cash"];
+let savedTransactions = []; // अब सारा डेटा गूगल शीट से लाइव लोड होगा
+let nextVoucherNumber = 1001;
+let isEditMode = false; // ट्रैक करेगा कि नई एंट्री है या एडिट मोड है
+
+document.addEventListener('DOMContentLoaded', () => {
+    const today = new Date();
+    document.getElementById('txDate').valueAsDate = today;
+    document.getElementById('syncDate').valueAsDate = today;
+    fetchLiveDropdownsAndRecords(); 
+});
+
+function updateVoucherNoField() {
+    if(!isEditMode) {
+        document.getElementById('vNo').value = `VUIT-${nextVoucherNumber}`;
+    }
+}
+
+function initFormRows() {
+    document.getElementById('dynamicRowsContainer').innerHTML = '';
+    addNewRow('Dr');
+    addNewRow('Cr');
+}
+
+// 🌐 क्लाउड लोड: गूगल शीट से डेटा फ़ेच करके टेबल और ड्रापडाउन बनाना
+function fetchLiveDropdownsAndRecords() {
+    const historyBody = document.getElementById('journalHistoryBody');
+    historyBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#6b7280;">गूगल शीट से लाइव डेटा लोड हो रहा है, कृपया प्रतीक्षा करें...</td></tr>';
+    
+    fetch(SCRIPT_URL)
+    .then(response => response.json())
+    .then(data => {
+        if (data.accounts) accountsList = data.accounts;
+        if (data.narrations) narrationsList = data.narrations;
+        
+        // लाइव वाउचर्स को स्टोर करना
+        if (data.transactions) {
+            savedTransactions = data.transactions;
+            // अगला यूनिक वाउचर नंबर कैलकुलेट करना
+            if (savedTransactions.length > 0) {
+                let numbers = savedTransactions.map(tx => parseInt(tx.voucherNo.replace('VUIT-', '')) || 1000);
+                nextVoucherNumber = Math.max(...numbers) + 1;
+            } else {
+                nextVoucherNumber = 1001;
+            }
+        }
+        
+        if(!isEditMode) initFormRows();
+        updateVoucherNoField();
+        updateNarrationDatalist();
+        renderHistory();
+    })
+    .catch(err => {
+        console.error("डेटा लोड एरर:", err);
+        historyBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#ef4444;">डेटा फ़ेच करने में समस्या आई। अपना Apps Script URL या इंटरनेट चेक करें।</td></tr>';
+    });
+}
+
+function updateNarrationDatalist() {
+    const dl = document.getElementById('narrationList');
+    if(dl) {
+        dl.innerHTML = "";
+        narrationsList.forEach(nar => { dl.innerHTML += `<option value="${nar}">`; });
+    }
+}
+
+function addNewRow(defaultType = 'Dr', defaultAccount = '', defaultAmount = '') {
+    const container = document.getElementById('dynamicRowsContainer');
+    const rowId = Date.now() + Math.random().toString(36).substr(2, 5);
+    const rowDiv = document.createElement('div');
+    rowDiv.className = 'entry-row';
+    rowDiv.id = rowId;
+
+    let optionsHtml = "";
+    accountsList.forEach(acc => { optionsHtml += `<option value="${acc}">`; });
+    const listId = `list-${rowId}`;
+
+    rowDiv.innerHTML = `
+        <div style="position:relative; width:100%;">
+            <input type="text" class="row-account" list="${listId}" value="${defaultAccount}" placeholder="-- खाता खोजें या नया टाइप करें --" required onchange="calculateLiveTotals()">
+            <datalist id="${listId}">${optionsHtml}</datalist>
+        </div>
+        <select class="row-type" onchange="calculateLiveTotals();">
+            <option value="Dr" ${defaultType === 'Dr' ? 'selected' : ''}>Dr. (डेबिट)</option>
+            <option value="Cr" ${defaultType === 'Cr' ? 'selected' : ''}>Cr. (क्रेडिट)</option>
+        </select>
+        <input type="number" class="row-amount" value="${defaultAmount}" placeholder="राशि" min="0.01" step="0.01" required oninput="calculateLiveTotals()">
+        <button type="button" class="btn-danger" onclick="removeRow('${rowId}')">❌</button>
+    `;
+    container.appendChild(rowDiv);
+    calculateLiveTotals();
+}
+
+function removeRow(rowId) {
+    const rows = document.querySelectorAll('.entry-row');
+    if(rows.length <= 2) { alert("कम से कम 2 पंक्तियाँ होना अनिवार्य है!"); return; }
+    document.getElementById(rowId).remove();
+    calculateLiveTotals();
+}
+
+function calculateLiveTotals() {
+    let totalDr = 0, totalCr = 0;
+    document.querySelectorAll('.entry-row').forEach(row => {
+        const type = row.querySelector('.row-type').value;
+        const amt = parseFloat(row.querySelector('.row-amount').value) || 0;
+        if (type === 'Dr') totalDr += amt; else totalCr += amt;
+    });
+
+    document.getElementById('liveDr').textContent = totalDr.toFixed(2);
+    document.getElementById('liveCr').textContent = totalCr.toFixed(2);
+    const diff = Math.abs(totalDr - totalCr);
+    const statusEl = document.getElementById('liveMatchStatus');
+    const saveBtn = document.getElementById('saveTxBtn');
+
+    if (totalDr > 0 && totalCr > 0 && diff === 0) {
+        statusEl.textContent = "✓ मिलान पूर्ण (Balanced)"; statusEl.className = "match-alert"; saveBtn.disabled = false;
+    } else {
+        statusEl.textContent = `अंतर: ₹${diff.toFixed(2)} (Unbalanced)`; statusEl.className = "mismatch-alert"; saveBtn.disabled = true;
+    }
+}
+
+// प्रविष्टि सुरक्षित करें: सीधे क्लाउड डेटाबेस (Google Sheet) में राइट करना
+document.getElementById('journalForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const saveBtn = document.getElementById('saveTxBtn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = "क्लाउड में सेव हो रहा है...";
+
+    const currentVNo = document.getElementById('vNo').value;
+    const vType = document.getElementById('vType').value;
+    const txDate = document.getElementById('txDate').value;
+    const typedNarration = document.getElementById('txNarration').value.trim();
+    
+    let uploadRows = [];
+    document.querySelectorAll('.entry-row').forEach(row => {
+        const acc = row.querySelector('.row-account').value.trim();
+        const type = row.querySelector('.row-type').value;
+        const amt = parseFloat(row.querySelector('.row-amount').value);
+        
+        uploadRows.push({
+            VoucherNo: currentVNo,
+            VoucherType: vType,
+            Date: txDate,
+            Account: acc,
+            Type: type,
+            DebitAmount: type === 'Dr' ? amt : 0,
+            CreditAmount: type === 'Cr' ? amt : 0,
+            Narration: typedNarration
+        });
+    });
+
+    // POST API call सीधे गूगल शीट में सबमिट करने के लिए
+    fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: "SAVE", voucherNo: currentVNo, data: uploadRows })
+    })
+    .then(() => {
+        alert(`सफलता: वाउचर ${currentVNo} सुरक्षित कर दिया गया है!`);
+        document.getElementById('txNarration').value = '';
+        isEditMode = false;
+        document.getElementById('saveTxBtn').textContent = "जर्नल प्रविष्टि सुरक्षित करें (Save Entry)";
+        fetchLiveDropdownsAndRecords(); // रीयलटाइम रीलोड
+    })
+    .catch(err => {
+        alert("सेव करने में समस्या आई: " + err.message);
+        saveBtn.disabled = false;
+    });
+});
+
+// 📋 इतिहास टेबल रेंडर करना (एडिट और डिलीट बटन के साथ)
+function renderHistory() {
+    const tbody = document.getElementById('journalHistoryBody');
+    tbody.innerHTML = '';
+    
+    if(savedTransactions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#6b7280;">कोई रिकॉर्ड नहीं मिला!</td></tr>';
+        return;
+    }
+
+    savedTransactions.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+    savedTransactions.forEach((tx) => {
+        let drLines = tx.lines.filter(l => l.type === 'Dr');
+        let crLines = tx.lines.filter(l => l.type === 'Cr');
+        let allOrderedLines = [...drLines, ...crLines];
+
+        allOrderedLines.forEach((line, index) => {
+            const tr = document.createElement('tr');
+            if (index === 0) {
+                tr.innerHTML = `
+                    <td rowspan="${tx.lines.length}" style="font-weight:600;">
+                        ${tx.voucherNo}<br><span style="font-weight:normal; font-size:12px; color:#6b7280;">${tx.date}</span><br><span class="v-badge v-${tx.voucherType}">${tx.voucherType}</span>
+                    </td>
+                    <td><span class="${line.type === 'Dr' ? 'dr-text' : 'cr-text'}">${line.type === 'Cr' ? 'To ' : ''}${line.account}</span>${line.type === 'Dr' ? '<span style="float:right; font-weight:bold;">Dr.</span>' : ''}</td>
+                    <td>${line.type === 'Dr' ? '₹' + line.amount.toFixed(2) : '-'}</td>
+                    <td>${line.type === 'Cr' ? '₹' + line.amount.toFixed(2) : '-'}</td>
+                    <td rowspan="${tx.lines.length}" style="text-align:center; vertical-align:middle; gap:5px; display:flex; flex-direction:column;">
+                        <button class="btn-secondary" style="padding:4px 8px; font-size:12px; background-color:#2563eb;" onclick="editTransaction('${tx.voucherNo}')">✏️ एडिट</button>
+                        <button class="btn-secondary" style="padding:4px 8px; font-size:12px; background-color:#0ea5e9;" onclick="printVoucher('${tx.voucherNo}')">🖨️ प्रिंट</button>
+                        
+                        <button class="btn-danger" style="padding:4px 8px; font-size:12px;" onclick="cloudDeleteTransaction('${tx.voucherNo}')">❌ डिलीट</button>
+                    </td>
+                `;
+            } else {
+                tr.innerHTML = `
+                    <td><span class="${line.type === 'Dr' ? 'dr-text' : 'cr-text'}">${line.type === 'Cr' ? 'To ' : ''}${line.account}</span>${line.type === 'Dr' ? '<span style="float:right; font-weight:bold;">Dr.</span>' : ''}</td>
+                    <td>${line.type === 'Dr' ? '₹' + line.amount.toFixed(2) : '-'}</td>
+                    <td>${line.type === 'Cr' ? '₹' + line.amount.toFixed(2) : '-'}</td>
+                `;
+            }
+            tbody.appendChild(tr);
+        });
+
+        
+       
+        const narRow = document.createElement('tr');
+        narRow.innerHTML = `<td colspan="5" class="narration" style="background:#fff; border-bottom: 2px solid #d1d5db;"><strong>विवरण:</strong> (${tx.narration})</td>`;
+        tbody.appendChild(narRow);
+    });
+}
+
+// ✏️ एडिट ऑप्शन: रिकॉर्ड डेटा को वापस ऊपर फॉर्म में लोड करना
+// इसे अपनी script.js में पुराने editTransaction फ़ंक्शन से बदलें
+window.editTransaction = function(vNo) {
+    const tx = savedTransactions.find(t => t.voucherNo === vNo);
+    if(!tx) return;
+    
+    isEditMode = true;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // तारीख को HTML फ़ॉर्मेट (yyyy-MM-dd) में बदलना
+    let cleanedDate = tx.date;
+    if (cleanedDate && cleanedDate.includes(" ")) {
+        // अगर 'Mon Sep 14 2026...' जैसा फॉर्मेट आ जाए तो उसे कनवर्ट करें
+        let parsedDate = new Date(cleanedDate);
+        if (!isNaN(parsedDate.getTime())) {
+            let day = ("0" + parsedDate.getDate()).slice(-2);
+            let month = ("0" + (parsedDate.getMonth() + 1)).slice(-2);
+            cleanedDate = parsedDate.getFullYear() + "-" + month + "-" + day;
+        }
+    } else if (cleanedDate && cleanedDate.includes("T")) {
+        cleanedDate = cleanedDate.split("T")[0];
+    }
+
+    document.getElementById('vNo').value = tx.voucherNo;
+    document.getElementById('vType').value = tx.voucherType;
+    document.getElementById('txDate').value = cleanedDate; // अब बिना एरर के सेट होगा
+    document.getElementById('txNarration').value = tx.narration;
+
+    const container = document.getElementById('dynamicRowsContainer');
+    container.innerHTML = '';
+    
+    tx.lines.forEach(line => {
+        addNewRow(line.type, line.account, line.amount);
+    });
+    
+    document.getElementById('saveTxBtn').textContent = "🔄 अपडेट करें (Update Cloud Entry)";
+    calculateLiveTotals();
+};
+
+
+// ❌ क्लाउड डिलीट: गूगल शीट और फ्रंटएंड दोनों जगह से परमानेंट डिलीट करना
+window.cloudDeleteTransaction = function(vNo) {
+    if(confirm(`क्या आप वाउचर ${vNo} को Google Sheet और यहाँ से हमेशा के लिए डिलीट करना चाहते हैं?`)) {
+        fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: "DELETE", voucherNo: vNo })
+        })
+        .then(() => {
+            alert(`वाउचर ${vNo} को क्लाउड शीट से सफलतापूर्वक हटा दिया गया है!`);
+            fetchLiveDropdownsAndRecords(); // स्क्रीन डेटा तुरंत अपडेट करें
+        })
+        .catch(err => alert("डिलीट करने में विफल: " + err.message));
+    }
+};
+
+// चुनी हुई तारीख के हिसाब से डेटा छानने का हेल्पर
+function getRecordsByDate(targetDate) {
+    const dayRecords = savedTransactions.filter(tx => tx.date === targetDate);
+    let rowsData = [];
+    dayRecords.forEach(tx => {
+        tx.lines.forEach(line => {
+            rowsData.push({ VoucherNo: tx.voucherNo, VoucherType: tx.voucherType, Date: tx.date, Narration: tx.narration, Account: line.account, Type: line.type, DebitAmount: line.type === 'Dr' ? line.amount : 0, CreditAmount: line.type === 'Cr' ? line.amount : 0 });
+        });
+    });
+    return rowsData;
+}
+
+// चुनी हुई तारीख का CSV बैकअप डाउनलोड करने के लिए
+window.exportDateRecordsToCSV = function() {
+    const selectedDate = document.getElementById('syncDate').value;
+    const records = getRecordsByDate(selectedDate);
+    if(records.length === 0) { alert(`तारीख (${selectedDate}) के लिए कोई रिकॉर्ड नहीं मिला!`); return; }
+
+    let csvContent = "data:text/csv;charset=utf-8,Voucher No,Voucher Type,Date,Particulars/Account,Line Type,Debit (Dr),Credit (Cr),Narration\n";
+    records.forEach(r => { csvContent += `"${r.VoucherNo}","${r.VoucherType}","${r.Date}","${r.Account}","${r.Type}",${r.DebitAmount},${r.CreditAmount},"${r.Narration}"\n`; });
+
+    const link = document.createElement("a");
+    link.setAttribute("href", encodeURI(csvContent));
+    link.setAttribute("download", `daybook_${selectedDate}.csv`);
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+};
+
+// नोटिफिकेशन अलर्ट (डायरेक्ट सिंक अब ऑटोमैटिक फॉर्म सबमिट पर काम करता है)
+window.syncRecordsToGoogleSheet = function() {
+    alert("यह सिस्टम अब फुली ऑटोमैटिक है! जैसे ही आप ऊपर फॉर्म सबमिट या अपडेट करेंगे, डेटा सीधे रीयल-टाइम में गूगल शीट में सिंक हो जाएगा।");
+};
+// 🟢 नया प्रिंट वाउचर इंजन
+window.printVoucher = function(vNo) {
+    const tx = savedTransactions.find(t => t.voucherNo === vNo);
+    if (!tx) {
+        alert("वाउचर का डेटा नहीं मिला!");
+        return;
+    }
+
+    let drLines = tx.lines.filter(l => l.type === 'Dr');
+    let crLines = tx.lines.filter(l => l.type === 'Cr');
+    let allOrderedLines = [...drLines, ...crLines];
+    
+    let totalAmt = 0;
+    drLines.forEach(l => totalAmt += l.amount);
+
+    // प्रिंट के लिए नया टैब/विंडो खोलना
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    
+    let rowsHtml = '';
+    allOrderedLines.forEach(line => {
+        rowsHtml += `
+            <tr>
+                <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">
+                    <span style="${line.type === 'Cr' ? 'padding-left:20px;' : ''}">
+                        ${line.type === 'Cr' ? 'To ' : ''}<b>${line.account}</b>
+                    </span>
+                </td>
+                <td style="border: 1px solid #ddd; padding: 10px; text-align: center; font-weight: bold; color: ${line.type === 'Dr' ? '#2563eb' : '#db2777'};">${line.type}.</td>
+                <td style="border: 1px solid #ddd; padding: 10px; text-align: right;">${line.type === 'Dr' ? '₹' + line.amount.toFixed(2) : '-'}</td>
+                <td style="border: 1px solid #ddd; padding: 10px; text-align: right;">${line.type === 'Cr' ? '₹' + line.amount.toFixed(2) : '-'}</td>
+            </tr>
+        `;
+    });
+
+    // सुंदर प्रिंट रसीद टेम्पलेट (HTML + CSS)
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>Print Voucher - ${tx.voucherNo}</title>
+            <style>
+                body { font-family: 'Segoe UI', Arial, sans-serif; margin: 30px; color: #333; }
+                .receipt-box { border: 2px solid #333; padding: 20px; border-radius: 8px; max-width: 700px; margin: 0 auto; }
+                .header { text-align: center; border-bottom: 2px double #333; padding-bottom: 10px; margin-bottom: 20px; }
+                .meta-table { width: 100%; margin-bottom: 20px; font-size: 14px; }
+                .main-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                .footer { margin-top: 50px; display: flex; justify-content: space-between; font-weight: bold; }
+                .badge { padding: 3px 8px; font-size: 12px; font-weight: bold; border-radius: 4px; color: white; text-transform: uppercase; }
+                .v-Payment { background-color: #ef4444; } .v-Receipt { background-color: #10b981; }
+                .v-Journal { background-color: #f59e0b; } .v-Contra { background-color: #6366f1; }
+            </style>
+        </head>
+        <body>
+            <div class="receipt-box">
+                <div class="header">
+                    <h2 style="margin: 0; text-transform: uppercase; letter-spacing: 1px;">JOURNAL VOUCHER</h2>
+                    <p style="margin: 5px 0 0 0; color: #666; font-size: 13px;">Double Entry Bookkeeping System</p>
+                </div>
+                
+                <table class="meta-table">
+                    <tr>
+                        <td><strong>वाउचर नंबर:</strong> ${tx.voucherNo}</td>
+                        <td style="text-align: right;"><strong>तारीख:</strong> ${tx.date}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>प्रकार:</strong> <span class="badge v-${tx.voucherType}">${tx.voucherType}</span></td>
+                        <td></td>
+                    </tr>
+                </table>
+
+                <table class="main-table">
+                    <thead>
+                        <tr style="background-color: #f3f4f6;">
+                            <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">खाते का विवरण (Particulars)</th>
+                            <th style="border: 1px solid #ddd; padding: 10px; text-align: center;">Type</th>
+                            <th style="border: 1px solid #ddd; padding: 10px; text-align: right;">डेबिट (Dr. ₹)</th>
+                            <th style="border: 1px solid #ddd; padding: 10px; text-align: right;">क्रेडिट (Cr. ₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHtml}
+                        <tr style="background-color: #f9fafb; font-weight: bold;">
+                            <td colspan="2" style="border: 1px solid #ddd; padding: 10px; text-align: right;">कुल योग (Total):</td>
+                            <td style="border: 1px solid #ddd; padding: 10px; text-align: right;">₹${totalAmt.toFixed(2)}</td>
+                            <td style="border: 1px solid #ddd; padding: 10px; text-align: right;">₹${totalAmt.toFixed(2)}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div style="font-size: 13px; font-style: italic; background: #f3f4f6; padding: 10px; border-radius: 4px; border-left: 4px solid #666;">
+                    <strong>नरेशन / विवरण:</strong> (${tx.narration})
+                </div>
+
+                <div class="footer">
+                    <div>तैयारकर्ता (Prepared By)</div>
+                    <div>स्वीकृतकर्ता (Authorized Signatory)</div>
+                </div>
+            </div>
+            <script>
+                // विंडो लोड होते ही ऑटोमैटिक प्रिंट प्रॉम्ट खोलें और प्रिंट होने के बाद पॉपअप बंद कर दें
+                window.onload = function() { 
+                    window.print(); 
+                    setTimeout(function() { window.close(); }, 500);
+                }
+            <\/script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+};
+
+  </script>
+</body>
+</html>
