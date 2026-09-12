@@ -1,0 +1,474 @@
+
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Dynamic Table with Filters & Summary</title>
+
+    <!-- DataTables CSS -->
+    <link rel="stylesheet"
+          href="https://cdn.datatables.net/2.3.4/css/dataTables.dataTables.min.css">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 15px;
+            background: #f9f9f9;
+        }
+
+        /* Summary */
+        .summary-container {
+            background: #eef2f7;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #d2d9e2;
+
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+
+            font-weight: bold;
+            font-size: 15px;
+        }
+
+        .summary-box {
+            color: #2c3e50;
+            background: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+
+        .summary-box span {
+            color: #27ae60;
+        }
+
+        /* Table wrapper */
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            background: white;
+            padding: 5px;
+            border-radius: 8px;
+        }
+
+        table.dataTable {
+            width: 100% !important;
+            white-space: nowrap;
+        }
+
+        table.dataTable thead th {
+            background-color: #34495e;
+            color: white;
+        }
+
+        /* Filter row */
+        .filters th {
+            background: #f1f3f5 !important;
+            padding: 5px !important;
+        }
+
+        .filters input {
+            width: 100%;
+            min-width: 80px;
+            padding: 6px;
+            border-radius: 4px;
+            border: 1px solid #bbb;
+            font-weight: normal;
+            font-size: 13px;
+        }
+
+        /* Action */
+        .action-btn {
+            cursor: pointer;
+            text-decoration: none;
+            margin-right: 7px;
+            font-size: 13px;
+        }
+
+        .action-btn:hover {
+            text-decoration: underline;
+        }
+
+        /* Amount */
+        .dr-amount {
+            font-weight: bold;
+        }
+
+        .cr-amount {
+            font-weight: bold;
+        }
+
+        /* Mobile */
+        @media (max-width: 600px) {
+
+            body {
+                margin: 8px;
+            }
+
+            .summary-container {
+                flex-direction: column;
+                gap: 8px;
+                font-size: 14px;
+            }
+
+            .summary-box {
+                width: 100%;
+            }
+
+            .filters input {
+                font-size: 12px;
+                padding: 5px;
+            }
+        }
+
+        /* Print */
+        @media print {
+
+            body {
+                margin: 0;
+                background: white;
+            }
+
+            .summary-container {
+                border: 1px solid #000;
+                background: white;
+            }
+
+            .filters,
+            .dataTables_filter,
+            .dataTables_length,
+            .dataTables_info,
+            .dataTables_paginate {
+                display: none !important;
+            }
+
+            .table-wrapper {
+                overflow: visible;
+            }
+
+            table.dataTable {
+                width: 100% !important;
+                white-space: normal;
+            }
+
+            .action-btn,
+            th:last-child,
+            td:last-child {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Summary -->
+    <div class="summary-container">
+
+        <div class="summary-box">
+            कुल डेबिट (Total Dr.):
+            <span id="total-debit">₹0.00</span>
+        </div>
+
+        <div class="summary-box">
+            कुल क्रेडिट (Total Cr.):
+            <span id="total-credit">₹0.00</span>
+        </div>
+
+    </div>
+
+
+    <!-- Table -->
+    <div class="table-wrapper">
+
+        <table id="voucherTable" class="display">
+
+            <thead>
+
+                <tr>
+                    <th>वाउचर / तारीख</th>
+                    <th>विवरण (Particulars)</th>
+                    <th>डेबिट (Dr. ₹)</th>
+                    <th>क्रेडिट (Cr. ₹)</th>
+                    <th>एक्शन</th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                <tr>
+
+                    <td>
+                        VUIT-1007<br>
+                        <small>2026-09-25</small>
+                    </td>
+
+                    <td>
+                        Receipt - Sales A/c Dr.<br>
+                        <small>To Uio (विवरण: Hddhs)</small>
+                    </td>
+
+                    <td class="dr-amount" data-val="6">
+                        ₹6.00
+                    </td>
+
+                    <td class="cr-amount" data-val="0">
+                        -
+                    </td>
+
+                    <td>
+                        <span class="action-btn">✏️ एडिट</span>
+                        <span class="action-btn">🖨️ प्रिंट</span>
+                        <span class="action-btn">❌ डिलीट</span>
+                    </td>
+
+                </tr>
+
+
+                <tr>
+
+                    <td>
+                        VUIT-1004<br>
+                        <small>2026-09-15</small>
+                    </td>
+
+                    <td>
+                        Journal - Xh Dr.<br>
+                        <small>To Hssj (विवरण: Hxh)</small>
+                    </td>
+
+                    <td class="dr-amount" data-val="3">
+                        ₹3.00
+                    </td>
+
+                    <td class="cr-amount" data-val="0">
+                        -
+                    </td>
+
+                    <td>
+                        <span class="action-btn">✏️ एडिट</span>
+                        <span class="action-btn">🖨️ प्रिंट</span>
+                        <span class="action-btn">❌ डिलीट</span>
+                    </td>
+
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/2.3.4/js/dataTables.min.js"></script>
+
+
+    <script>
+
+        $(document).ready(function () {
+
+            /*
+             * Original header की copy बनाना
+             * ताकि दूसरी row में filters आ सकें
+             */
+
+            $('#voucherTable thead tr')
+                .clone(false)
+                .addClass('filters')
+                .appendTo('#voucherTable thead');
+
+
+            /*
+             * DataTable initialize
+             */
+
+            var table = $('#voucherTable').DataTable({
+
+                orderCellsTop: true,
+
+                pageLength: 10,
+
+                lengthMenu: [
+                    [10, 25, 50, 100, -1],
+                    [10, 25, 50, 100, "सभी"]
+                ],
+
+                language: {
+                    search: "सर्च:",
+                    lengthMenu: "_MENU_ रिकॉर्ड",
+                    info: "_START_ से _END_ / कुल _TOTAL_",
+                    infoEmpty: "कोई रिकॉर्ड नहीं",
+                    zeroRecords: "कोई रिकॉर्ड नहीं मिला",
+                    paginate: {
+                        first: "पहला",
+                        last: "अंतिम",
+                        next: "अगला",
+                        previous: "पिछला"
+                    }
+                },
+
+
+                /*
+                 * Filter inputs बनाना
+                 */
+
+                initComplete: function () {
+
+                    var api = this.api();
+
+                    api.columns().every(function (colIdx) {
+
+                        var column = this;
+
+                        var cell = $('.filters th').eq(colIdx);
+
+                        var title = $(api.column(colIdx).header()).text().trim();
+
+
+                        /*
+                         * Action column में filter नहीं
+                         */
+
+                        if (title === 'एक्शन') {
+
+                            cell.html('');
+
+                            return;
+                        }
+
+
+                        /*
+                         * Input बनाना
+                         */
+
+                        cell.html(
+                            '<input type="text" ' +
+                            'placeholder="' + title + ' खोजें">'
+                        );
+
+
+                        /*
+                         * Filter event
+                         */
+
+                        $('input', cell)
+                            .on('keyup change clear', function () {
+
+                                if (column.search() !== this.value) {
+
+                                    column
+                                        .search(this.value)
+                                        .draw();
+
+                                }
+
+                            });
+
+                    });
+
+                },
+
+
+                /*
+                 * हर बार table draw होने पर
+                 * filtered rows का total निकालना
+                 */
+
+                drawCallback: function () {
+
+                    updateSummary();
+
+                }
+
+            });
+
+
+            /*
+             * Summary update function
+             */
+
+            function updateSummary() {
+
+                var totalDr = 0;
+                var totalCr = 0;
+
+
+                /*
+                 * केवल filtered rows
+                 */
+
+                table.rows({
+                    search: 'applied'
+                }).every(function () {
+
+                    var row = this.node();
+
+                    var drValue =
+                        parseFloat(
+                            $(row)
+                                .find('.dr-amount')
+                                .attr('data-val')
+                        ) || 0;
+
+
+                    var crValue =
+                        parseFloat(
+                            $(row)
+                                .find('.cr-amount')
+                                .attr('data-val')
+                        ) || 0;
+
+
+                    totalDr += drValue;
+                    totalCr += crValue;
+
+                });
+
+
+                /*
+                 * Summary box update
+                 */
+
+                $('#total-debit').text(
+                    '₹' + totalDr.toLocaleString('en-IN', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    })
+                );
+
+
+                $('#total-credit').text(
+                    '₹' + totalCr.toLocaleString('en-IN', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    })
+                );
+
+            }
+
+
+            /*
+             * Initial total
+             */
+
+            updateSummary();
+
+        });
+
+    </script>
+
+</body>
+</html>
+
