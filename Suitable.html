@@ -675,25 +675,40 @@ function renderHistory() {
             const tr = document.createElement('tr');
             if (index === 0) {
                 tr.innerHTML = `
-                    <td rowspan="${tx.lines.length}" style="font-weight:600;">
-                        ${tx.voucherNo}<br><span style="font-weight:normal; font-size:12px; color:#6b7280;">${tx.date}</span><br><span class="v-badge v-${tx.voucherType}">${tx.voucherType}</span>
-                    </td>
-                    <td><span class="${line.type === 'Dr' ? 'dr-text' : 'cr-text'}">${line.type === 'Cr' ? 'To ' : ''}${line.account}</span>${line.type === 'Dr' ? '<span style="float:right; font-weight:bold;">Dr.</span>' : ''}</td>
-                    <td>${line.type === 'Dr' ? '₹' + line.amount.toFixed(2) : '-'}</td>
-                    <td>${line.type === 'Cr' ? '₹' + line.amount.toFixed(2) : '-'}</td>
-                    <td rowspan="${tx.lines.length}" style="text-align:center; vertical-align:middle; gap:5px; display:flex; flex-direction:column;">
-                        <button class="btn-secondary" style="padding:4px 8px; font-size:12px; background-color:#2563eb;" onclick="editTransaction('${tx.voucherNo}')">✏️ एडिट</button>
-                        <button class="btn-secondary" style="padding:4px 8px; font-size:12px; background-color:#0ea5e9;" onclick="printVoucher('${tx.voucherNo}')">🖨️ प्रिंट</button>
-                        
-                        <button class="btn-danger" style="padding:4px 8px; font-size:12px;" onclick="cloudDeleteTransaction('${tx.voucherNo}')">❌ डिलीट</button>
-                    </td>
-                `;
-            } else {
-                tr.innerHTML = `
-                    <td><span class="${line.type === 'Dr' ? 'dr-text' : 'cr-text'}">${line.type === 'Cr' ? 'To ' : ''}${line.account}</span>${line.type === 'Dr' ? '<span style="float:right; font-weight:bold;">Dr.</span>' : ''}</td>
-                    <td>${line.type === 'Dr' ? '₹' + line.amount.toFixed(2) : '-'}</td>
-                    <td>${line.type === 'Cr' ? '₹' + line.amount.toFixed(2) : '-'}</td>
-                `;
+        <!-- Column 1: Voucher Details (Visible) -->
+        <td style="font-weight:600;">
+            ${tx.voucherNo}<br><span style="font-weight:normal; font-size:12px; color:#6b7280;">${tx.date}</span><br><span class="v-badge v-${tx.voucherType}">${tx.voucherType}</span>
+        </td>
+        <!-- Column 2: Particulars -->
+        <td><span class="${line.type === 'Dr' ? 'dr-text' : 'cr-text'}">${line.type === 'Cr' ? 'To ' : ''}${line.account}</span>${line.type === 'Dr' ? '<span style="float:right; font-weight:bold;">Dr.</span>' : ''}</td>
+        <!-- Column 3: Debit -->
+        <td class="dr-amount" data-val="${line.type === 'Dr' ? line.amount : 0}">${line.type === 'Dr' ? '₹' + line.amount.toFixed(2) : '-'}</td>
+        <!-- Column 4: Credit -->
+        <td class="cr-amount" data-val="${line.type === 'Cr' ? line.amount : 0}">${line.type === 'Cr' ? '₹' + line.amount.toFixed(2) : '-'}</td>
+        <!-- Column 5: Actions (Visible) -->
+        <td style="text-align:center;">
+            <div style="display:flex; flex-direction:column; gap:5px;">
+                <button class="btn-secondary" style="padding:4px 8px; font-size:12px; background-color:#2563eb;" onclick="editTransaction('${tx.voucherNo}')">✏️ एडिट</button>
+                <button class="btn-secondary" style="padding:4px 8px; font-size:12px; background-color:#0ea5e9;" onclick="printVoucher('${tx.voucherNo}')">🖨️ प्रिंट</button>
+                <button class="btn-danger" style="padding:4px 8px; font-size:12px;" onclick="cloudDeleteTransaction('${tx.voucherNo}')">❌ डिलीट</button>
+            </div>
+        </td>
+    `;
+} else {
+    tr.innerHTML = `
+        <!-- Column 1: Voucher Details (Hidden Text for Clean Look but searchable by DataTable) -->
+        <td style="color: transparent; select: none; font-size: 0px;">
+            ${tx.voucherNo} ${tx.date} ${tx.voucherType}
+        </td>
+        <!-- Column 2: Particulars -->
+        <td><span class="${line.type === 'Dr' ? 'dr-text' : 'cr-text'}">${line.type === 'Cr' ? 'To ' : ''}${line.account}</span>${line.type === 'Dr' ? '<span style="float:right; font-weight:bold;">Dr.</span>' : ''}</td>
+        <!-- Column 3: Debit -->
+        <td class="dr-amount" data-val="${line.type === 'Dr' ? line.amount : 0}">${line.type === 'Dr' ? '₹' + line.amount.toFixed(2) : '-'}</td>
+        <!-- Column 4: Credit -->
+        <td class="cr-amount" data-val="${line.type === 'Cr' ? line.amount : 0}">${line.type === 'Cr' ? '₹' + line.amount.toFixed(2) : '-'}</td>
+        <!-- Column 5: Actions (Blank/Hidden for sub-rows) -->
+        <td></td>
+    `;
             }
             tbody.appendChild(tr);
         });
