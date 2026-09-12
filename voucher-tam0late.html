@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Print Voucher - {{voucherNo}}</title>
+    <!-- आपकी मुख्य CSS फाइल का लिंक -->
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <style>
+        /* प्रिंट के दौरान अनचाहे मार्जिन हटाने और सेटिंग्स के लिए */
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 20px; color: #333; }
+        .no-border-input, .column-input, button, .input-control-zone { display: none !important; }
+        .print-only-text { display: inline-block !important; }
+        .main-voucher-grid { display: grid; }
+        .items-list-container { display: block; width: 100%; }
+        .item-row { padding: 4px 0; border-bottom: 1px dashed #eee; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="voucher-card">
+    <!-- हेडर भाग -->
+    <div class="header-container">
+        <div class="school-info">
+            <img src="IMG-20260912-WA0002.jpg" class="school-logo" alt="SHEMFORD">
+        </div>
+        <div class="voucher-title">
+            <h2>{{voucherTitle}}</h2>
+            <p>SHEMFORD SCHOOL, Natwa Road, Mirzapur</p>
+        </div>
+    </div>
+
+    <!-- तारीख और वाउचर नंबर पट्टी -->
+    <div class="top-meta-strip">
+        <div class="meta-cell-date" style="padding-left:8px;">
+            DATE: <span class="print-only-text">{{date}}</span>
+        </div>
+        <div class="meta-cell-vno">
+            V.No. <span class="print-only-text">{{voucherNo}}</span>
+        </div>
+    </div>
+
+    <!-- ================= 1. CASH RECEIPT VOUCHER GRID ================= -->
+    <div id="cashReceiptGrid" class="main-voucher-grid" style="display: {{cashGridDisplay}};">
+        <!-- कॉलम 1: Sl.No. -->
+        <div class="voucher-column col-sl">
+            <div class="col-header">Sl.No.</div>
+            <div class="col-body"><span class="print-only-text">1</span></div>
+        </div>
+
+        <!-- कॉलम 2: Particulars -->
+        <div class="voucher-column col-particulars">
+            <div class="col-header">PARTICULARS</div>
+            <div class="col-body-dynamic">
+                <div class="items-list-container">{{particularsListHtml}}</div>
+            </div>
+        </div>
+
+        <!-- कॉलम 3: Head of Accounts -->
+        <div class="voucher-column col-accounts">
+            <div class="col-header">HEAD OF ACCOUNTS</div>
+            <div class="col-body-dynamic">
+                <div class="items-list-container">{{accountsListHtml}}</div>
+            </div>
+            <div class="total">TOTAL</div>
+        </div>
+
+        <!-- कॉलम 4: Amount -->
+        <div class="voucher-column col-amount">
+            <div class="col-header">Amount</div>
+            <div class="col-body-dynamic">
+                <div class="items-list-container">{{amountsListHtml}}</div>
+            </div>
+            <div class="total">₹{{totalAmt}}</div>
+        </div>
+    </div>
+
+    <!-- ================= 2. JOURNAL VOUCHER GRID ================= -->
+    <div id="journalVoucherGrid" class="main-voucher-grid" style="display: {{journalGridDisplay}};">
+        <!-- [FIRST PART: DEBIT] -->
+        <div class="voucher-column col-sl-jv">
+            <div class="col-header">Sl.No.</div>
+            <div class="col-body"><span class="print-only-text">1</span></div>
+        </div>
+        
+        <div class="voucher-column col-accounts-jv">
+            <div class="col-header">HEAD OF ACCOUNTS (Dr.)</div>
+            <div class="col-body-dynamic">
+                <div class="items-list-container">{{jvDrAccountsHtml}}</div>
+            </div>
+            <div class="total">TOTAL</div>
+        </div>
+
+        <div class="voucher-column col-amount-jv">
+            <div class="col-header">Amount (Dr.)</div>
+            <div class="col-body-dynamic">
+                <div class="items-list-container">{{jvDrAmountsHtml}}</div>
+            </div>
+            <div class="total">₹{{jvDrTotal}}</div>
+        </div>
+        
+        <!-- [SECOND PART: CREDIT] -->
+        <div class="voucher-column col-sl-jv" style="border-left: 2px solid #000;">
+            <div class="col-header">Sl.No.</div>
+            <div class="col-body"><span class="print-only-text">1</span></div>
+        </div>
+
+        <div class="voucher-column col-accounts-jv">
+            <div class="col-header">HEAD OF ACCOUNTS (Cr.)</div>
+            <div class="col-body-dynamic">
+                <div class="items-list-container">{{jvCrAccountsHtml}}</div>
+            </div>
+            <div class="total">TOTAL</div>
+        </div>
+
+        <div class="voucher-column col-amount-jv">
+            <div class="col-header">Amount (Cr.)</div>
+            <div class="col-body-dynamic">
+                <div class="items-list-container">{{jvCrAmountsHtml}}</div>
+            </div>
+            <div class="total">₹{{jvCrTotal}}</div>
+        </div>
+    </div>
+
+    <!-- Narration Section -->
+    <div class="narration-section" style="display: flex; margin-top: 15px;">
+        <div class="narration-label" style="margin-left:8px"><strong>Narration:</strong></div>
+        <div class="narration-value" style="padding-left: 10px;">
+            <span class="print-only-text">({{narration}})</span>
+        </div>
+    </div>
+
+    <!-- शब्दों में रकम -->
+    <div class="words-section" style="margin-top: 10px;">
+        AMOUNT'S (IN WORDS) Rs. : <span class="words-output" style="font-weight: bold;">{{amountInWords}}</span>
+    </div>
+
+    <!-- 4 सिग्नेचर कॉलम -->
+    <div class="signature-section" id="sign" style="margin-top: 40px;">
+        <div class="sig-cell">Prepared By</div>
+        <div class="sig-cell">Payment By</div>
+        <div class="sig-cell">Approved By</div>
+        <div class="sig-cell">Receipt By</div>
+    </div>
+</div>
+
+<script>
+    window.onload = function() { 
+        window.print(); 
+        setTimeout(function() { window.close(); }, 500);
+    }
+</script>
+</body>
+</html>
