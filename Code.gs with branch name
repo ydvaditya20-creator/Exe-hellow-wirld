@@ -1,0 +1,588 @@
+// ============================================================
+// 1. GET REQUEST
+// Google Sheet से Accounts, Narrations और Transactions लाना
+// ============================================================
+function doGet() {
+  try {
+
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName("daybook");
+
+    var accounts = [];
+    var narrations = [];
+    var dbTransactions = [];
+
+    if (sheet && sheet.getLastRow() > 1) {
+
+      var lastRow = sheet.getLastRow();
+
+      // अब 9 columns पढ़ेंगे
+      // A = Voucher No
+      // B = Voucher Type
+      // C = Date
+      // D = Account
+      // E = Type
+      // F = Debit
+      // G = Credit
+      // H = Narration
+      // I = Name
+
+      var fullData = sheet
+        .getRange(2, 1, lastRow - 1, 9)
+        .getValues();
+
+      var tempTxMap = {};
+      var uniqueAccs = {};
+      var uniqueNars = {};
+
+      fullData.forEach(function(row) {
+
+        var vNo = row[0]
+          ? row[0].toString().trim()
+          : "";
+
+        var vType = row[1]
+          ? row[1].toString().trim()
+          : "";
+
+        var date = row[2]
+          ? formatDate(row[2])
+          : "";
+
+        var acc = row[3]
+          ? row[3].toString().trim()
+          : "";
+
+        var type = row[4]
+          ? row[4].toString().trim()
+          : "";
+
+        var drAmt = parseFloat(row[5]) || 0;
+
+        var crAmt = parseFloat(row[6]) || 0;
+
+        var narr = row[7]
+          ? row[7].toString().trim()
+          : "";
+
+        // ==========================
+        // NAME
+        // I column
+        // ==========================
+        var name = row[8]
+          ? row[8].toString().trim()
+          : "";
+
+
+        // Master Accounts
+        if (acc && !uniqueAccs[acc]) {
+          uniqueAccs[acc] = true;
+          accounts.push(acc);
+        }
+
+        // Master Narrations
+        if (narr && !uniqueNars[narr]) {
+          uniqueNars[narr] = true;
+          narrations.push(narr);
+        }
+
+
+        // ==========================
+        // TRANSACTION
+        // ==========================
+        if (vNo) {
+
+          if (!tempTxMap[vNo]) {
+
+            tempTxMap[vNo] = {
+              voucherNo: vNo,
+              voucherType: vType,
+              date: date,
+              narration: narr,
+              name: name,
+              lines: []
+            };
+
+          }
+
+          // अगर पहली row में name खाली है
+          // लेकिन दूसरी row में name मिला है
+          if (!tempTxMap[vNo].name && name) {
+            tempTxMap[vNo].name = name;
+          }
+
+          // अगर narration पहली row में खाली है
+          if (!tempTxMap[vNo].narration && narr) {
+            tempTxMap[vNo].narration = narr;
+          }
+
+          tempTxMap[vNo].lines.push({
+
+            account: acc,
+
+            type: type,
+
+            amount:
+              type === "Dr"
+                ? drAmt
+                : crAmt
+
+          });
+
+        }
+
+      });
+
+
+      // Map को Array में बदलना
+      for (var k in tempTxMap) {
+        dbTransactions.push(tempTxMap[k]);
+      }
+
+    }
+
+
+    // Default Accounts
+    if (accounts.length === 0) {
+
+      accounts = [
+        "Cash A/c",
+        "Bank A/c",
+        "Sales A/c",
+        "Purchase A/c"
+      ];
+
+    }
+
+
+    // Default Narrations
+    if (narrations.length === 0) {
+
+      narrations = [
+        "Being goods sold for cash"
+      ];
+
+    }
+
+
+    var result = {
+
+      accounts: accounts,
+
+      narrations: narrations,
+
+      transactions: dbTransactions
+
+    };
+
+
+    return ContentService
+
+      .createTextOutput(
+        JSON.stringify(result)
+      )
+
+      .setMimeType(
+        ContentService.MimeType.JSON
+      );
+
+
+  } catch (error) {
+
+    return ContentService
+
+      .createTextOutput(
+        JSON.stringify({
+          error: error.toString()
+        })
+      )
+
+      .setMimeType(
+        ContentService.MimeType.JSON
+      );
+
+  }
+}
+
+
+
+// ============================================================
+// 2. POST REQUEST
+// SAVE / EDIT / DELETE
+// ============================================================
+function doPost(e) {
+
+  try {
+
+    var req = JSON.parse(
+      e.postData.contents
+    );
+
+    var ss =
+      SpreadsheetApp.getActiveSpreadsheet();
+
+    var sheet =
+      ss.getSheetByName("daybook");
+
+
+    // अगर daybook नहीं है
+    if (!sheet) {
+
+      sheet =
+        ss.insertSheet("daybook");
+
+    }
+
+
+
+    // ========================================================
+    // DELETE
+    // ========================================================
+    if (req.action === "DELETE") {
+
+      if (sheet.getLastRow() > 1) {
+
+        var lastRow =
+          sheet.getLastRow();
+
+        var vNos =
+          sheet
+            .getRange(
+              2,
+              1,
+              lastRow - 1,
+              1
+            )
+            .getValues();
+
+
+        // पीछे से delete
+        for (
+          var i = vNos.length - 1;
+          i >= 0;
+          i--
+        ) {
+
+          if (
+            vNos[i][0]
+              .toString()
+              .trim() ===
+            req.voucherNo
+          ) {
+
+            sheet.deleteRow(i + 2);
+
+          }
+
+        }
+
+      }
+
+
+      return ContentService
+
+        .createTextOutput(
+          JSON.stringify({
+            status: "success",
+            action: "DELETE"
+          })
+        )
+
+        .setMimeType(
+          ContentService.MimeType.JSON
+        );
+
+    }
+
+
+
+    // ========================================================
+    // SAVE / EDIT
+    // ========================================================
+    if (req.action === "SAVE") {
+
+
+      // ------------------------------------------------------
+      // EDIT CASE
+      // पहले उसी Voucher No की पुरानी rows delete
+      // ------------------------------------------------------
+      if (sheet.getLastRow() > 1) {
+
+        var lastRow =
+          sheet.getLastRow();
+
+        var vNos =
+          sheet
+            .getRange(
+              2,
+              1,
+              lastRow - 1,
+              1
+            )
+            .getValues();
+
+
+        for (
+          var i = vNos.length - 1;
+          i >= 0;
+          i--
+        ) {
+
+          if (
+            vNos[i][0]
+              .toString()
+              .trim() ===
+            req.voucherNo
+          ) {
+
+            sheet.deleteRow(i + 2);
+
+          }
+
+        }
+
+      }
+
+
+
+      // ======================================================
+      // HEADER
+      // ======================================================
+      if (sheet.getLastRow() === 0) {
+
+        sheet.appendRow([
+
+          "Voucher No",
+
+          "Voucher Type",
+
+          "Date",
+
+          "Particulars/Account",
+
+          "Line Type",
+
+          "Debit (Dr)",
+
+          "Credit (Cr)",
+
+          "Narration",
+
+          "Name"
+
+        ]);
+
+      }
+      else {
+
+        // पुराने 8-column sheet में
+        // I column header नहीं है तो डाल दें
+
+        if (
+          sheet
+            .getRange(1, 9)
+            .getValue() === ""
+        ) {
+
+          sheet
+            .getRange(1, 9)
+            .setValue("Name");
+
+        }
+
+      }
+
+
+
+      // ======================================================
+      // DATA SAVE
+      // ======================================================
+      if (
+        req.data &&
+        req.data.length > 0
+      ) {
+
+        var rowsToAppend = [];
+
+
+        req.data.forEach(function(row) {
+
+          rowsToAppend.push([
+
+            row.VoucherNo || "",
+
+            row.VoucherType || "",
+
+            row.Date || "",
+
+            row.Account || "",
+
+            row.Type || "",
+
+            parseFloat(row.DebitAmount) || 0,
+
+            parseFloat(row.CreditAmount) || 0,
+
+            row.Narration || "",
+
+            // ==========================
+            // NAME
+            // ==========================
+            row.Name || ""
+
+          ]);
+
+        });
+
+
+        // एक साथ append करना
+        var startRow =
+          sheet.getLastRow() + 1;
+
+        sheet
+          .getRange(
+            startRow,
+            1,
+            rowsToAppend.length,
+            9
+          )
+          .setValues(rowsToAppend);
+
+      }
+
+
+
+      return ContentService
+
+        .createTextOutput(
+          JSON.stringify({
+            status: "success",
+            action: "SAVE",
+            voucherNo: req.voucherNo
+          })
+        )
+
+        .setMimeType(
+          ContentService.MimeType.JSON
+        );
+
+    }
+
+
+
+    // ========================================================
+    // UNKNOWN ACTION
+    // ========================================================
+    return ContentService
+
+      .createTextOutput(
+        JSON.stringify({
+          status: "error",
+          message: "Unknown action"
+        })
+      )
+
+      .setMimeType(
+        ContentService.MimeType.JSON
+      );
+
+
+  } catch (err) {
+
+    return ContentService
+
+      .createTextOutput(
+        JSON.stringify({
+          status: "error",
+          message: err.toString()
+        })
+      )
+
+      .setMimeType(
+        ContentService.MimeType.JSON
+      );
+
+  }
+
+}
+
+
+
+// ============================================================
+// 3. DATE FORMAT HELPER
+// ============================================================
+function formatDate(dateVal) {
+
+  if (dateVal instanceof Date) {
+
+    var jsDate = dateVal;
+
+    var day =
+      ("0" + jsDate.getDate())
+      .slice(-2);
+
+    var month =
+      ("0" + (jsDate.getMonth() + 1))
+      .slice(-2);
+
+    return (
+      jsDate.getFullYear() +
+      "-" +
+      month +
+      "-" +
+      day
+    );
+
+  }
+
+
+
+  // अगर string है
+  var str =
+    dateVal
+      .toString()
+      .trim();
+
+
+  if (str) {
+
+    // Full date string
+    var parsed =
+      Date.parse(str);
+
+
+    if (!isNaN(parsed)) {
+
+      var d =
+        new Date(parsed);
+
+      var day =
+        ("0" + d.getDate())
+        .slice(-2);
+
+      var month =
+        ("0" + (d.getMonth() + 1))
+        .slice(-2);
+
+      return (
+        d.getFullYear() +
+        "-" +
+        month +
+        "-" +
+        day
+      );
+
+    }
+
+
+    // T या space के बाद का हिस्सा हटाना
+    return str
+      .split("T")[0]
+      .split(" ")[0];
+
+  }
+
+
+  return "";
+
+}
