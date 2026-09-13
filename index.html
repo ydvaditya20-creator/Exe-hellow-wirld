@@ -278,12 +278,17 @@
     <table id ="voucherTable">
         <thead>
             <tr>
-                <th style="width: 15%;">वाउचर / तारीख</th>
-                <th style="width: 50%;">विवरण (Particulars)</th>
-                <th style="width: 15%;">डेबिट (Dr. ₹)</th>
-                <th style="width: 15%;">क्रेडिट (Cr. ₹)</th>
-                <th style="width: 5%;">एक्शन</th>
-            </tr>
+        <th style="width: 10%;">वाउचर नं</th>
+        <th style="width: 10%;">तारीख</th>
+        <th style="width: 8%;">टाइप</th>
+        <th style="width: 12%;">नाम (Name)</th>
+        <th style="width: 15%;">डेबिट खाता (Dr Acc)</th>
+        <th style="width: 10%;">डेबिट रकम (Dr ₹)</th>
+        <th style="width: 15%;">क्रेडिट खाता (Cr Acc)</th>
+        <th style="width: 10%;">क्रेडिट रकम (Cr ₹)</th>
+        <th style="width: 15%;">विवरण (Particulars)</th>
+        <th style="width: 5%; text-align:center;">एक्शन</th>
+    </tr>
         </thead>
         <tbody id="journalHistoryBody">
             <!-- Saved transactions will be injected here -->
@@ -565,71 +570,82 @@ function renderHistory() {
     const tbody = document.getElementById('journalHistoryBody');
     tbody.innerHTML = '';
     
-    // 1. अगर पहले से DataTable चालू है, तो उसे और उसके पुराने फिल्टर्स को पूरी तरह डिलीट करें
+    // 1. अगर पहले से DataTable चालू है, तो उसे पूरी तरह डिलीट करें
     if ($.fn.dataTable.isDataTable('#voucherTable')) {
         $('#voucherTable').DataTable().destroy();
         $('#voucherTable thead .filters').remove(); 
     }
     
+    //colspan को 10 कर दिया है क्योंकि अब टेबल में 10 कॉलम हैं
     if(savedTransactions.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#6b7280;">कोई रिकॉर्ड नहीं मिला!</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#6b7280;">कोई रिकॉर्ड नहीं मिला!</td></tr>';
         return;
     }
 
+    // तारीख के हिसाब से सॉर्ट करें
     savedTransactions.sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0));
 
+    // हर एक ट्रांजैक्शन के लिए सिर्फ 1 सिंगल रो (Row) बनेगी
     savedTransactions.forEach((tx) => {
-        let drLines = tx.lines.filter(l => l.type === 'Dr');
-        let crLines = tx.lines.filter(l => l.type === 'Cr');
-        let allOrderedLines = [...drLines, ...crLines];
+        const tr = document.createElement('tr');
+        
+        // 1. वाउचर की सभी लाइनों में से Dr और Cr खातों को फ़िल्टर करें
+        let drLines = tx.lines ? tx.lines.filter(l => l.type === 'Dr') : [];
+        let crLines = tx.lines ? tx.lines.filter(l => l.type === 'Cr') : [];
 
-        allOrderedLines.forEach((line, index) => {
-            const tr = document.createElement('tr');
+        // 2. सुरक्षा के लिए अगर कोई एक गायब हो तो डिफ़ॉल्ट ऑब्जेक्ट सेट करें (ताकि कोड न रुके)
+        let drLine = drLines[0] || { account: '-', amount: 0 };
+        let crLine = crLines[0] || { account: '-', amount: 0 };
+        
+        // विवरण (Narration) का HTML स्ट्रक्चर
+        const narrationHTML = tx.narration ? `<div style="font-size:12px; color:#4b5563; font-style:italic;"><strong>विवरण:</strong> ${tx.narration}</div>` : '-';
+
+        // 3. पूरी एंट्री को एक ही Row (tr) में बिना किसी खाली सेल के इंजेक्ट करें
+        tr.innerHTML = `
+            <!-- 1. वाउचर नं -->
+            <td style="font-weight:600; vertical-align:middle;">${tx.voucherNo || '-'}</td>
             
-            // विवरण (Narration) को आख़िरी लाइन में मर्ज करने के लिए
-            const isLastLine = (index === allOrderedLines.length - 1);
-            const narrationHTML = isLastLine ? `<br><div style="font-size:12px; color:#4b5563; margin-top:4px; font-style:italic;"><strong>विवरण:</strong> (${tx.narration || '-'})</div>` : '';
-
-            if (index === 0) {
-                tr.innerHTML = `
-                    <td style="font-weight:600; vertical-align:top;">
-                        ${tx.voucherNo}<br><span style="font-weight:normal; font-size:12px; color:#6b7280;">${tx.date}</span><br><span class="v-badge v-${tx.voucherType}">${tx.voucherType}</span>
-         <br>
-    <span style="font-weight:600; font-size:12px; color:#374151;">
-        ${tx.name || tx.Name || ''}
-    </span>           </td>
-                    <td style="vertical-align:top;">
-                        <span class="${line.type === 'Dr' ? 'dr-text' : 'cr-text'}">${line.type === 'Cr' ? 'To ' : ''}${line.account}</span>
-                        ${line.type === 'Dr' ? '<span style="float:right; font-weight:bold;">Dr.</span>' : ''}
-                        ${narrationHTML}
-                    </td>
-                    <td class="dr-amount" data-val="${line.type === 'Dr' ? line.amount : 0}" style="vertical-align:top;">${line.type === 'Dr' ? '₹' + line.amount.toFixed(2) : '-'}</td>
-                    <td class="cr-amount" data-val="${line.type === 'Cr' ? line.amount : 0}" style="vertical-align:top;">${line.type === 'Cr' ? '₹' + line.amount.toFixed(2) : '-'}</td>
-                    <td style="text-align:center; vertical-align:top;">
-                        <div style="display:flex; flex-direction:column; gap:5px; align-items:center;">
-                            <button class="btn-secondary" style="padding:4px 8px; font-size:12px; background-color:#2563eb; width:70px;" onclick="editTransaction('${tx.voucherNo}')">✏️ एडिट</button>
-                            <button class="btn-secondary" style="padding:4px 8px; font-size:12px; background-color:#0ea5e9; width:70px;" onclick="printVoucher('${tx.voucherNo}')">🖨️ प्रिंट</button>
-                            <button class="btn-danger" style="padding:4px 8px; font-size:12px; width:70px;" onclick="cloudDeleteTransaction('${tx.voucherNo}')">❌ डिलीट</button>
-                        </div>
-                    </td>
-                `;
-            } else {
-                tr.innerHTML = `
-                    <td style="color: transparent; font-size: 0px; user-select:none;">
-                        ${tx.voucherNo} ${tx.date} ${tx.voucherType}
-                    </td>
-                    <td style="vertical-align:top;">
-                        <span class="${line.type === 'Dr' ? 'dr-text' : 'cr-text'}">${line.type === 'Cr' ? 'To ' : ''}${line.account}</span>
-                        ${line.type === 'Dr' ? '<span style="float:right; font-weight:bold;">Dr.</span>' : ''}
-                        ${narrationHTML}
-                    </td>
-                    <td class="dr-amount" data-val="${line.type === 'Dr' ? line.amount : 0}" style="vertical-align:top;">${line.type === 'Dr' ? '₹' + line.amount.toFixed(2) : '-'}</td>
-                    <td class="cr-amount" data-val="${line.type === 'Cr' ? line.amount : 0}" style="vertical-align:top;">${line.type === 'Cr' ? '₹' + line.amount.toFixed(2) : '-'}</td>
-                    <td></td>
-                `;
-            }
-            tbody.appendChild(tr);
-        });
+            <!-- 2. तारीख -->
+            <td style="vertical-align:middle; color:#6b7280; font-size:13px;">${tx.date || '-'}</td>
+            
+            <!-- 3. टाइप -->
+            <td style="vertical-align:middle;"><span class="v-badge v-${tx.voucherType}">${tx.voucherType || '-'}</span></td>
+            
+            <!-- 4. नाम -->
+            <td style="font-weight:600; font-size:13px; color:#374151; vertical-align:middle;">${tx.name || tx.Name || '-'}</td>
+            
+            <!-- 5. डेबिट खाता (Dr Acc) -->
+            <td class="dr-text" style="vertical-align:middle; font-weight:500; color:#dc545;">${drLine.account}</td>
+            
+            <!-- 6. डेबिट रकम (Dr Amt) -->
+            <td style="vertical-align:middle; font-weight:600; color:#dc345;">
+                ${drLine.amount > 0 ? '₹' + drLine.amount.toFixed(2) : '-'}
+            </td>
+            
+            <!-- 7. क्रेडिट खाता (Cr Acc) -->
+            <td class="cr-text" style="vertical-align:middle; font-weight:500; color:#19754;">
+                ${crLine.account !== '-' ? 'To ' + crLine.account : '-'}
+            </td>
+            
+            <!-- 8. क्रेडिट रकम (Cr Amt) -->
+            <td style="vertical-align:middle; font-weight:600; color:#19854;">
+                ${crLine.amount > 0 ? '₹' + crLine.amount.toFixed(2) : '-'}
+            </td>
+            
+            <!-- 9. विवरण (Particulars / Narration) -->
+            <td style="vertical-align:middle; font-size:13px; color:#4b5563;">${narrationHTML}</td>
+            
+            <!-- 10. एक्शन -->
+            <td style="text-align:center; vertical-align:middle;">
+                <div style="display:flex; gap:5px; justify-content:center; align-items:center;">
+                    <button class="btn-secondary" style="padding:4px 8px; font-size:12px; background-color:#2563eb; color:white; border:none; border-radius:4px; cursor:pointer;" onclick="editTransaction('${tx.voucherNo}')">✏️</button>
+                    <button class="btn-secondary" style="padding:4px 8px; font-size:12px; background-color:#0ea5e9; color:white; border:none; border-radius:4px; cursor:pointer;" onclick="printVoucher('${tx.voucherNo}')">🖨️</button>
+                    <button class="btn-danger" style="padding:4px 8px; font-size:12px; color:white; border:none; border-radius:4px; cursor:pointer;" onclick="cloudDeleteTransaction('${tx.voucherNo}')">❌</button>
+                </div>
+            </td>
+        `;
+        
+        tbody.appendChild(tr);
     });
 
     // 2. DataTables error popup की जगह console में error दिखाएँ
@@ -638,8 +654,11 @@ function renderHistory() {
     }
 
     // 3. डेटा लोड होने के बाद टेबल को इनिशियलाइज़ करें
-    initializeDataTable();
+    if (typeof initializeDataTable === "function") {
+        initializeDataTable();
+    }
 }
+
 
 // DataTable इनिशियलाइज़ेशन फ़ंक्शन (इसमें आपकी पुरानी सेटिंग्स और हिंदी भाषा भी शामिल है)
 function initializeDataTable() {
@@ -913,14 +932,14 @@ window.printVoucher = async function(vNo) {
     }
 
     try {
-        const response = await fetch('voucher-template.html');
+        const response = await fetch('https://github.com/ydvaditya20-creator/Exe-hellow-wirld/blob/75f8a7d8c5eddaec3dd6edb6b17599950d7ad3f2/voucher-template.html');
         if (!response.ok) throw new Error("टेम्पलेट फ़ाइल लोड नहीं हो सकी");
         let html = await response.text();
 
         html = html
             .replace(/{{name}}/g, tx.name)
             .replace(/{{voucherNo}}/g, tx.voucherNo)   
-            .replace(/{{date}}/g,"-  " +  tx.date)
+            .replace(/{{date}}/g, tx.date)
             .replace(/{{voucherTitle}}/g, tx.voucherType.toUpperCase() + " VOUCHER")
             .replace(/{{narration}}/g, tx.narration || '')
             // 🟢 यहाँ शब्दों में रकम इंजेक्ट हो रही है
@@ -1055,7 +1074,7 @@ window.printVoucher = async function(vNo) {
 
     // Paise जोड़ें
     if (paise > 0) {
-        result += " Point"  + twoDigitWords(paise) + "  Only";
+        result += " Point " + twoDigitWords(paise) + "  Only";
     } else {
         result += "  Only";
     }
@@ -1066,3 +1085,8 @@ window.printVoucher = async function(vNo) {
   </script>
 </body>
 </html>
+
+
+
+
+
