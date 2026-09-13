@@ -576,7 +576,7 @@ function renderHistory() {
         $('#voucherTable thead .filters').remove(); 
     }
     
-    //colspan को 10 कर दिया है क्योंकि अब टेबल में 10 कॉलम हैं
+    // colspan को 10 कर दिया है क्योंकि टेबल में 10 कॉलम हैं
     if(savedTransactions.length === 0) {
         tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#6b7280;">कोई रिकॉर्ड नहीं मिला!</td></tr>';
         return;
@@ -589,54 +589,60 @@ function renderHistory() {
     savedTransactions.forEach((tx) => {
         const tr = document.createElement('tr');
         
-        // 1. वाउचर की सभी लाइनों में से Dr और Cr खातों को फ़िल्टर करें
+        // वाउचर की सभी लाइनों में से Dr और Cr खातों को अलग-अलग फ़िल्टर करें
         let drLines = tx.lines ? tx.lines.filter(l => l.type === 'Dr') : [];
         let crLines = tx.lines ? tx.lines.filter(l => l.type === 'Cr') : [];
 
-        // 2. सुरक्षा के लिए अगर कोई एक गायब हो तो डिफ़ॉल्ट ऑब्जेक्ट सेट करें (ताकि कोड न रुके)
-        let drLine = drLines[0] || { account: '-', amount: 0 };
-        let crLine = crLines[0] || { account: '-', amount: 0 };
+        // --- डेबिट खातों और रकमों को एक के नीचे एक सेट करें ---
+        let drAccountsHTML = '-';
+        let drAmountsHTML = '-';
+        if (drLines.length > 0) {
+            drAccountsHTML = drLines.map(l => `<div style="margin-bottom: 4px;"><span class="dr-text">${l.account}</span> <span style="float:right; font-weight:bold; color:#dc3545; margin-left:8px;">Dr.</span></div>`).join('');
+            drAmountsHTML = drLines.map(l => `<div style="margin-bottom: 4px; font-weight:600; color:#dc3545;">₹${Number(l.amount).toFixed(2)}</div>`).join('');
+        }
+
+        // --- क्रेडिट खातों और रकमों को एक के नीचे एक सेट करें ---
+        let crAccountsHTML = '-';
+        let crAmountsHTML = '-';
+        if (crLines.length > 0) {
+            crAccountsHTML = crLines.map(l => `<div style="margin-bottom: 4px; class="cr-text">To ${l.account}</div>`).join('');
+            crAmountsHTML = crLines.map(l => `<div style="margin-bottom: 4px; font-weight:600; color:#198754;">₹${Number(l.amount).toFixed(2)}</div>`).join('');
+        }
         
         // विवरण (Narration) का HTML स्ट्रक्चर
         const narrationHTML = tx.narration ? `<div style="font-size:12px; color:#4b5563; font-style:italic;"><strong>विवरण:</strong> ${tx.narration}</div>` : '-';
 
-        // 3. पूरी एंट्री को एक ही Row (tr) में बिना किसी खाली सेल के इंजेक्ट करें
+        // पूरी एंट्री को एक ही Row (tr) में बिना किसी खाली सेल के इंजेक्ट करें
         tr.innerHTML = `
             <!-- 1. वाउचर नं -->
-            <td style="font-weight:600; vertical-align:middle;">${tx.voucherNo || '-'}</td>
+            <td style="font-weight:600; vertical-align:top;">${tx.voucherNo || '-'}</td>
             
             <!-- 2. तारीख -->
-            <td style="vertical-align:middle; color:#6b7280; font-size:13px;">${tx.date || '-'}</td>
+            <td style="vertical-align:top; color:#6b7280; font-size:13px; white-space:nowrap;">${tx.date || '-'}</td>
             
             <!-- 3. टाइप -->
-            <td style="vertical-align:middle;"><span class="v-badge v-${tx.voucherType}">${tx.voucherType || '-'}</span></td>
+            <td style="vertical-align:top;"><span class="v-badge v-${tx.voucherType}">${tx.voucherType || '-'}</span></td>
             
             <!-- 4. नाम -->
-            <td style="font-weight:600; font-size:13px; color:#374151; vertical-align:middle;">${tx.name || tx.Name || '-'}</td>
+            <td style="font-weight:600; font-size:13px; color:#374151; vertical-align:top;">${tx.name || tx.Name || '-'}</td>
             
             <!-- 5. डेबिट खाता (Dr Acc) -->
-            <td class="dr-text" style="vertical-align:middle; font-weight:500; color:#dc545;">${drLine.account}</td>
+            <td style="vertical-align:top;">${drAccountsHTML}</td>
             
             <!-- 6. डेबिट रकम (Dr Amt) -->
-            <td style="vertical-align:middle; font-weight:600; color:#dc345;">
-                ${drLine.amount > 0 ? '₹' + drLine.amount.toFixed(2) : '-'}
-            </td>
+            <td style="vertical-align:top; text-align:right;">${drAmountsHTML}</td>
             
             <!-- 7. क्रेडिट खाता (Cr Acc) -->
-            <td class="cr-text" style="vertical-align:middle; font-weight:500; color:#19754;">
-                ${crLine.account !== '-' ? 'To ' + crLine.account : '-'}
-            </td>
+            <td style="vertical-align:top;">${crAccountsHTML}</td>
             
             <!-- 8. क्रेडिट रकम (Cr Amt) -->
-            <td style="vertical-align:middle; font-weight:600; color:#19854;">
-                ${crLine.amount > 0 ? '₹' + crLine.amount.toFixed(2) : '-'}
-            </td>
+            <td style="vertical-align:top; text-align:right;">${crAmountsHTML}</td>
             
             <!-- 9. विवरण (Particulars / Narration) -->
-            <td style="vertical-align:middle; font-size:13px; color:#4b5563;">${narrationHTML}</td>
+            <td style="vertical-align:top; font-size:13px; color:#4b5563;">${narrationHTML}</td>
             
             <!-- 10. एक्शन -->
-            <td style="text-align:center; vertical-align:middle;">
+            <td style="text-align:center; vertical-align:top;">
                 <div style="display:flex; gap:5px; justify-content:center; align-items:center;">
                     <button class="btn-secondary" style="padding:4px 8px; font-size:12px; background-color:#2563eb; color:white; border:none; border-radius:4px; cursor:pointer;" onclick="editTransaction('${tx.voucherNo}')">✏️</button>
                     <button class="btn-secondary" style="padding:4px 8px; font-size:12px; background-color:#0ea5e9; color:white; border:none; border-radius:4px; cursor:pointer;" onclick="printVoucher('${tx.voucherNo}')">🖨️</button>
@@ -658,7 +664,6 @@ function renderHistory() {
         initializeDataTable();
     }
 }
-
 
 // DataTable इनिशियलाइज़ेशन फ़ंक्शन (इसमें आपकी पुरानी सेटिंग्स और हिंदी भाषा भी शामिल है)
 function initializeDataTable() {
