@@ -920,7 +920,7 @@ window.printVoucher = async function(vNo) {
         html = html
             .replace(/{{name}}/g, tx.name)
             .replace(/{{voucherNo}}/g, tx.voucherNo)   
-            .replace(/{{date}}/g, tx.date)
+            .replace(/{{date}}/g,"-  " +  tx.date)
             .replace(/{{voucherTitle}}/g, tx.voucherType.toUpperCase() + " VOUCHER")
             .replace(/{{narration}}/g, tx.narration || '')
             // 🟢 यहाँ शब्दों में रकम इंजेक्ट हो रही है
