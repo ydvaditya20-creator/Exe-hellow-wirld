@@ -202,7 +202,7 @@
         <form id="journalForm">
             <div class="main-meta">
                 <div class="form-group">
-                 <button type="button" id="basahiBtn" style="background-color: #4CAF50; color: white; border: none; padding: 8px 15px; cursor: pointer; border-radius: 4px; font-weight: bold;">बसही</button>
+                 <button type="button" id="basahiBtn" style="background-color: white; color: black; border: none; padding: 8px 15px; cursor: pointer; border-radius: 4px; font-weight: bold;">SHEMFORD BASAHI MIRZAPUR</button>
               
                     <label for="vNo">वाउचर नंबर (Voucher No.)</label>
                     <input type="text" id="vNo" readonly>
@@ -440,9 +440,18 @@ function calculateLiveTotals() {
 // नाम बटन: हर क्लिक पर बसही <-> नतवा
 // ============================================================
 const basahiBtn = document.getElementById('basahiBtn');
+
+let currentName = 'SHEMFORD BASAHI MIRZAPUR';
+
+basahiBtn.textContent = currentName;
+
 basahiBtn.addEventListener('click', function () {
-    const current = this.textContent.trim();
-    this.textContent = current === 'बसही' ? 'नतवा' : 'बसही';
+    currentName =
+        currentName === 'SHEMFORD BASAHI MIRZAPUR'
+            ? 'SHEMFORD NATWA MIRZAPUR'
+            : 'SHEMFORD BASAHI MIRZAPUR';
+
+    this.textContent = currentName;
 });
 
 // ============================================================
@@ -910,7 +919,7 @@ window.printVoucher = async function(vNo) {
 
         html = html
             .replace(/{{name}}/g, tx.name)
-            .replace(/{{voucherNo}}/g, tx.voucherNo)
+            .replace(/{{voucherNo}}/g, tx.voucherNo)   
             .replace(/{{date}}/g, tx.date)
             .replace(/{{voucherTitle}}/g, tx.voucherType.toUpperCase() + " VOUCHER")
             .replace(/{{narration}}/g, tx.narration || '')
