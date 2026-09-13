@@ -1,0 +1,130 @@
+// 1. GET Request: गूगल शीट से लाइव ट्रांजैक्शन रिकॉर्ड्स, खाते और नरेशन एक साथ उठाना
+function doGet() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName("daybook");
+    
+    var accounts = [];
+    var narrations = [];
+    var dbTransactions = [];
+    
+    if (sheet && sheet.getLastRow() > 1) {
+      var lastRow = sheet.getLastRow();
+      var fullData = sheet.getRange(2, 1, lastRow - 1, 8).getValues();
+      
+      var tempTxMap = {};
+      var uniqueAccs = {};
+      var uniqueNars = {};
+      
+      fullData.forEach(function(row) {
+        var vNo = row[0] ? row[0].toString().trim() : "";
+        var vType = row[1] ? row[1].toString().trim() : "";
+        var date = row[2] ? formatDate(row[2]) : "";
+        var acc = row[3] ? row[3].toString().trim() : "";
+        var type = row[4] ? row[4].toString().trim() : "";
+        var drAmt = parseFloat(row[5]) || 0;
+        var crAmt = parseFloat(row[6]) || 0;
+        var narr = row[7] ? row[7].toString().trim() : "";
+        
+        // मास्टर सूचियों के लिए यूनिक डेटा निकालना
+        if (acc && !uniqueAccs[acc]) { uniqueAccs[acc] = true; accounts.push(acc); }
+        if (narr && !uniqueNars[narr]) { uniqueNars[narr] = true; narrations.push(narr); }
+        
+        if (vNo) {
+          if (!tempTxMap[vNo]) {
+            tempTxMap[vNo] = { voucherNo: vNo, voucherType: vType, date: date, narration: narr, lines: [] };
+          }
+          tempTxMap[vNo].lines.push({ account: acc, type: type, amount: type === "Dr" ? drAmt : crAmt });
+        }
+      });
+      
+      for (var k in tempTxMap) { dbTransactions.push(tempTxMap[k]); }
+    }
+    
+    if (accounts.length === 0) accounts = ["Cash A/c", "Bank A/c", "Sales A/c", "Purchase A/c"];
+    if (narrations.length === 0) narrations = ["Being goods sold for cash"];
+    
+    var result = { accounts: accounts, narrations: narrations, transactions: dbTransactions };
+    return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({error: error.toString()})).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// 2. POST Request: नया डेटा सुरक्षित करना, एडिट अपडेट करना, या रो डिलीट करना
+function doPost(e) {
+  try {
+    var req = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName("daybook") || ss.insertSheet("daybook");
+    
+    // एक्शन चेक करें: DELETE
+    if (req.action === "DELETE") {
+      if (sheet.getLastRow() > 1) {
+        var lastRow = sheet.getLastRow();
+        var vNos = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+        // पीछे से डिलीट करना ताकि इंडेक्स न बिगड़े
+        for (var i = vNos.length - 1; i >= 0; i--) {
+          if (vNos[i][0].toString().trim() === req.voucherNo) {
+            sheet.deleteRow(i + 2); 
+          }
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({status: "success"})).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // एक्शन चेक करें: SAVE (या एडिट के बाद री-राइट)
+    if (req.action === "SAVE") {
+      // अगर पहले से वह वाउचर मौजूद है (एडिट केस) तो पुराने रोज़ डिलीट करें
+      if (sheet.getLastRow() > 1) {
+        var lastRow = sheet.getLastRow();
+        var vNos = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+        for (var i = vNos.length - 1; i >= 0; i--) {
+          if (vNos[i][0].toString().trim() === req.voucherNo) { sheet.deleteRow(i + 2); }
+        }
+      }
+      
+      // नया या अपडेटेड डेटा अपेंड करें
+      if (sheet.getLastRow() === 0) {
+        sheet.appendRow(["Voucher No", "Voucher Type", "Date", "Particulars/Account", "Line Type", "Debit (Dr)", "Credit (Cr)", "Narration"]);
+      }
+      
+      req.data.forEach(function(row) {
+        sheet.appendRow([row.VoucherNo, row.VoucherType, row.Date, row.Account, row.Type, row.DebitAmount, row.CreditAmount, row.Narration]);
+      });
+      return ContentService.createTextOutput(JSON.stringify({status: "success"})).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({status: "error", message: err.toString()})).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// डेट फॉर्मेट फिक्स करने का हेल्पर
+// इसे Apps Script के सबसे नीचे पुराने formatDate से बदलें
+function formatDate(dateVal) {
+  if (dateVal instanceof Date) {
+    var jsDate = dateVal;
+    var day = ("0" + jsDate.getDate()).slice(-2);
+    var month = ("0" + (jsDate.getMonth() + 1)).slice(-2);
+    return jsDate.getFullYear() + "-" + month + "-" + day;
+  }
+  
+  // अगर तारीख पहले से स्ट्रिंग है, तो उसे क्लीन करके yyyy-MM-dd फ़ॉर्मेट में बदलें
+  var str = dateVal.toString().trim();
+  if (str) {
+    // अगर फुल डेट स्ट्रिंग है (उदा. Mon Sep 14...)
+    var parsed = Date.parse(str);
+    if (!isNaN(parsed)) {
+      var d = new Date(parsed);
+      var day = ("0" + d.getDate()).slice(-2);
+      var month = ("0" + (d.getMonth() + 1)).slice(-2);
+      return d.getFullYear() + "-" + month + "-" + day;
+    }
+    // अगर T या स्पेस से अलग है तो सिर्फ डेट का हिस्सा लें
+    return str.split("T")[0].split(" ")[0];
+  }
+  return "";
+}
+
+
