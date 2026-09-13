@@ -932,7 +932,7 @@ window.printVoucher = async function(vNo) {
     }
 
     try {
-        const response = await fetch('https://github.com/ydvaditya20-creator/Exe-hellow-wirld/blob/75f8a7d8c5eddaec3dd6edb6b17599950d7ad3f2/voucher-template.html');
+        const response = await fetch('voucher-template.html');
         if (!response.ok) throw new Error("टेम्पलेट फ़ाइल लोड नहीं हो सकी");
         let html = await response.text();
 
