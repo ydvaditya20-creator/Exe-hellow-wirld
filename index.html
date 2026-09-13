@@ -909,6 +909,7 @@ window.printVoucher = async function(vNo) {
         let html = await response.text();
 
         html = html
+            .replace(/{{name}}/g, tx.name)
             .replace(/{{voucherNo}}/g, tx.voucherNo)
             .replace(/{{date}}/g, tx.date)
             .replace(/{{voucherTitle}}/g, tx.voucherType.toUpperCase() + " VOUCHER")
