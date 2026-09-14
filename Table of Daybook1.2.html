@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Google Sheet Data Viewer</title>
+    <title>Google Sheet Live Editor</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 30px; background-color: #f4f6f9; }
         h2 { color: #333; text-transform: capitalize; border-bottom: 2px solid #007bff; padding-bottom: 8px; }
@@ -10,73 +10,171 @@
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background-color: #007bff; color: white; }
         tr:nth-child(even) { background-color: #f9f9f9; }
-        .loading { font-size: 18px; color: #666; font-style: italic; }
+        .loading { font-size: 18px; color: #666; font-style: italic; text-align: center; margin-top: 20px; }
         .error { color: red; font-weight: bold; }
+        
+        /* Action Buttons Styling */
+        .action-buttons { display: flex; gap: 6px; }
+        .btn { padding: 6px 12px; font-size: 13px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-edit { background-color: #ffc107; color: #212529; }
+        .btn-save { background-color: #28a745; color: white; }
+        .btn-delete { background-color: #dc3545; color: white; }
+        
+        /* Inline Input Fields Styling */
+        .edit-input { width: 90%; padding: 6px; font-size: 14px; border: 1px solid #007bff; border-radius: 4px; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
     <h2 id="title">Loading Data...</h2>
-    <div id="table-container" class="loading">Google Sheet se data laya ja raha hai, kripya intezar karein...</div>
+    <div id="table-container" class="loading">Google Sheet se live data laya ja raha hai...</div>
 
     <script>
-        // URL se parameters nikalna (e.g., viewer.html?sheet=basahi)
         const urlParams = new URLSearchParams(window.location.search);
         const sheetName = urlParams.get('sheet');
         
-        // YAHAN APNA GOOGLE APPS SCRIPT WEB APP URL DAALEIN
-        const webAppUrl = "https://script.google.com/macros/s/AKfycbzMLraZcirFbs-oOhgdwnXAoM3AYYNug-_Y5EAEZ9OIlEPGqAvW8CqeCPXXuty9h58W9w/exec"; 
+        // ⚠️ APNA GOOGLE APPS SCRIPT WEB APP URL YAHAN DAALEIN
+        const webAppUrl = "YOUR_WEB_APP_URL_HERE"; 
 
         if (!sheetName) {
-            document.getElementById('table-container').innerHTML = "<p class='error'>Error: URL me sheet ka naam nahi mila!</p>";
+            document.getElementById('table-container').innerHTML = "<p class='error'>Error: URL me sheet parameter nahi mila!</p>";
         } else {
-            document.getElementById('title').innerText = sheetName + " Table Live Data";
+            document.getElementById('title').innerText = sheetName + " Table Editor";
             fetchData();
         }
 
         function fetchData() {
-            // Apps Script se JSON data fetch karna
             fetch(`${webAppUrl}?sheet=${sheetName}`)
                 .then(response => response.json())
                 .then(data => {
-                    if (data.length === 0 || data.status === "error") {
+                    if (data.length <= 1) {
                         document.getElementById('table-container').innerHTML = "<p class='error'>Is sheet me koi data nahi mila.</p>";
                         return;
                     }
                     buildTable(data);
                 })
                 .catch(error => {
-                    console.error("Error:", error);
-                    document.getElementById('table-container').innerHTML = "<p class='error'>Data load karne me dikkat aayi. Kripya check karein.</p>";
+                    document.getElementById('table-container').innerHTML = "<p class='error'>Data load karne me error aayi.</p>";
                 });
         }
 
-        // Pure HTML Table banane wala function
         function buildTable(data) {
-            let htmlTable = "<table>";
+            let htmlTable = "<table><tr id='header-row'>";
             
-            // Header Row (Pehli row)
-            htmlTable += "<tr>";
-            data[0].forEach(headerText => {
-                htmlTable += `<th>${headerText}</th>`;
-            });
-            htmlTable += "</tr>";
+            // Header Generation (Last plain action drop karna)
+            for (let j = 0; j < data[0].length - 1; j++) {
+                htmlTable += `<th>${data[0][j]}</th>`;
+            }
+            htmlTable += "<th>Actions</th></tr>";
             
-            // Data Rows (Baki saari rows)
+            // Data Rows Generation
             for (let i = 1; i < data.length; i++) {
-                htmlTable += "<tr>";
-                data[i].forEach(cellText => {
-                    htmlTable += `<td>${cellText}</td>`;
-                });
+                const voucherNo = data[i][0]; // Index 0 par Voucher No hai
+                htmlTable += `<tr id="row-${i}">`;
+                
+                for (let j = 0; j < data[i].length - 1; j++) {
+                    htmlTable += `<td class="cell-data">${data[i][j]}</td>`;
+                }
+                
+                // Edit aur Delete Buttons
+                htmlTable += `
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-edit" id="btn-edit-${i}" onclick="toggleEdit(${i}, '${voucherNo}')">✏️ Edit</button>
+                            <button class="btn btn-delete" id="btn-del-${i}" onclick="deleteVoucher('${voucherNo}')">🗑️ Delete</button>
+                        </div>
+                    </td>
+                `;
                 htmlTable += "</tr>";
             }
             
             htmlTable += "</table>";
-            
-            // Container me table daalna
             const container = document.getElementById('table-container');
             container.classList.remove('loading');
             container.innerHTML = htmlTable;
+        }
+
+        // ---- INLINE EDIT TOOGLE LOGIC ----
+        function toggleEdit(rowIndex, voucherNo) {
+            const tr = document.getElementById(`row-${rowIndex}`);
+            const cells = tr.getElementsByClassName('cell-data');
+            const editBtn = document.getElementById(`btn-edit-${rowIndex}`);
+            
+            if (editBtn.innerText === "✏️ Edit") {
+                // --- EDIT MODE ACTIVATE ---
+                editBtn.innerText = "💾 Save";
+                editBtn.className = "btn btn-save";
+                
+                // Voucher No (Pehla cell j=0) ko locked rakhenge, baki editable honge
+                for (let j = 1; j < cells.length; j++) {
+                    const currentValue = cells[j].innerText;
+                    cells[j].innerHTML = `<input type="text" class="edit-input" value="${currentValue}">`;
+                }
+            } else {
+                // --- SAVE MODE TRIGGER ---
+                const updatedRow = [voucherNo]; // Pehla data hamesha Voucher No hi rahega
+                
+                // Input boxes se nayi value nikalna
+                for (let j = 1; j < cells.length; j++) {
+                    const inputVal = cells[j].querySelector('input').value.trim();
+                    updatedRow.push(inputVal);
+                }
+                
+                // UI par loading display karna aur save function call karna
+                editBtn.innerText = "⏳...";
+                editBtn.disabled = true;
+                saveUpdatedData(voucherNo, updatedRow);
+            }
+        }
+
+        // ---- GOOGLE SHEET ME DATA SAVE (UPDATE) KARNA ----
+        function saveUpdatedData(voucherNo, updatedRow) {
+            fetch(webAppUrl, {
+                method: "POST",
+                mode: "no-cors",
+                cache: "no-cache",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    action: "update",
+                    sheetName: sheetName,
+                    voucherNo: voucherNo,
+                    updatedRow: updatedRow
+                })
+            })
+            .then(() => {
+                alert("Data kamyabi se update ho gaya!");
+                fetchData(); // Table ko update ke baad auto fresh reload karna
+            })
+            .catch(error => {
+                alert("Data save karne me dikkat aayi.");
+                fetchData();
+            });
+        }
+
+        // ---- GOOGLE SHEET SE ROW DELETE KARNA ----
+        function deleteVoucher(voucherNo) {
+            if (confirm(`Kya aap sach me Voucher No: ${voucherNo} ko hatana chahte hain?`)) {
+                document.getElementById('table-container').innerHTML = "<div class='loading'>Deleting Row...</div>";
+                fetch(webAppUrl, {
+                    method: "POST",
+                    mode: "no-cors",
+                    cache: "no-cache",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        action: "delete",
+                        sheetName: sheetName,
+                        voucherNo: voucherNo
+                    })
+                })
+                .then(() => {
+                    alert("Voucher sheet se delete ho gaya!");
+                    fetchData();
+                })
+                .catch(error => {
+                    alert("Delete failed.");
+                    fetchData();
+                });
+            }
         }
     </script>
 </body>
