@@ -258,6 +258,21 @@ htmlTable += `
     printWindow.document.write(voucherHtml);
     printWindow.document.close();
 }
+function formatDate(dateStr) {
+    // Agar text me T aur Z hai (ISO format) tabhi format karein
+    if (typeof dateStr === 'string' && dateStr.includes('T')) {
+        const dateObj = new Date(dateStr);
+        if (!isNaN(dateObj.getTime())) {
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            
+            // Ab yeh date ko DD-MM-YYYY format me return karega (e.g., 14-09-2026)
+            return `${day}-${month}-${year}`; 
+        }
+    }
+    return dateStr; // Agar normal data hai toh waisa hi dikhega
+}
 
     </script>
 </body>
