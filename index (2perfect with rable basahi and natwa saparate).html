@@ -124,7 +124,10 @@
 
     <!-- SEPARATE TABLES FOR REPORT -->
     <h3 style="margin-top: 40px; color: var(--warning);">Basahi Voucher Register</h3>
-    <table id="basahiTable">
+  <button onclick="sendTableToSheet('basahiTable')">Export Natwa Table to Sheet</button>
+ 
+
+  <table id="basahiTable">
         <thead>
             <tr>
                 <th>Voucher No</th>
@@ -140,7 +143,10 @@
     </table>
 
     <h3 style="margin-top: 20px; color: var(--info);">Natwa Voucher Register</h3>
-    <table id="natwaTable">
+   <button onclick="sendTableToSheet('natwaTable')">Export Natwa Table to Sheet</button>
+ 
+
+ <table id="natwaTable">
         <thead>
             <tr>
                 <th>Voucher No</th>
@@ -186,6 +192,56 @@ window.onload = function() {
 renderHistoryTables();
 
 }
+function sendTableToSheet(tableId) {
+            // YAHAN APNA APPS SCRIPT WEB APP URL PASTE KAREIN
+            const webAppUrl = "https://script.google.com/macros/s/AKfycbzMLraZcirFbs-oOhgdwnXAoM3AYYNug-_Y5EAEZ9OIlEPGqAvW8CqeCPXXuty9h58W9w/exec"; 
+            
+            const table = document.getElementById(tableId);
+            if (!table) {
+                alert("Table nahi mila!");
+                return;
+            }
+
+            const rowsData = [];
+            const rows = table.querySelectorAll("tr");
+
+            // Table ki har row se data nikalna
+            rows.forEach(row => {
+                const cols = row.querySelectorAll("th, td");
+                const rowData = [];
+                cols.forEach(col => {
+                    rowData.push(col.innerText.trim());
+                });
+                rowsData.push(rowData);
+            });
+
+            // Google App Script ko bheja jaane wala data object
+            const payload = {
+                sheetName: tableId, // Id hi hamare sheet ka naam (tab name) hai
+                rows: rowsData
+            };
+
+            // Loader ya alert show karna
+            alert(`${tableId} table ka data Google Sheet me bheja ja raha hai...`);
+
+            // Fetch API ke zariye Google Sheet script ko POST request bhejna
+            fetch(webAppUrl, {
+                method: "POST",
+                mode: "no-cors", // Google Apps Script redirects ko handle karne ke liye no-cors zaroori hai
+                cache: "no-cache",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(() => {
+                alert(`Data kamyabi se '${tableId}' tab me add ho gaya hai!`);
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("Data bhejne me koi dikkat aayi.");
+            });
+        }
 
 // Toggle logic between Basahi and Natwa
 function toggleClassification() {
@@ -403,7 +459,7 @@ function printVoucher(id) {
     `;
     window.print();
 }
-
+Const="https://script.google.com/macros/s/AKfycbzMLraZcirFbs-oOhgdwnXAoM3AYYNug-_Y5EAEZ9OIlEPGqAvW8CqeCPXXuty9h58W9w/exec"
 
 </script>
 </body>
