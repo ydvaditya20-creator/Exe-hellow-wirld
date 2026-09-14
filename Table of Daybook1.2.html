@@ -176,6 +176,86 @@
                 });
             }
         }
+        function printVoucher(voucherNo) {
+    // 1. Pehle us row ko dhoondhein jisme yeh voucher hai
+    // Hum headers aur row cells dono ka data nikalenge
+    const table = document.querySelector("table");
+    const headers = Array.from(table.querySelectorAll("th")).map(th => th.innerText);
+    const rows = Array.from(table.querySelectorAll("tr"));
+    
+    let targetRowCells = null;
+    
+    // Sahi row dhoondhna Voucher No match karke
+    for(let i = 1; i < rows.length; i++) {
+        const firstCellText = rows[i].cells[0].innerText.trim();
+        if(firstCellText === voucherNo.trim()) {
+            targetRowCells = Array.from(rows[i].cells).map(td => td.innerText);
+            break;
+        }
+    }
+    
+    if(!targetRowCells) {
+        alert("Voucher data nahi mila!");
+        return;
+    }
+
+    // 2. Naya temporary window open karna print layout ke liye
+    const printWindow = window.open("", "_blank", "width=800,height=600");
+    
+    // 3. Voucher ke liye ek clean receipt design (HTML) taiyar karna
+    const voucherHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Print Voucher - ${voucherNo}</title>
+            <style>
+                body { font-family: 'Courier New', Courier, monospace; padding: 30px; color: #000; }
+                .receipt-box { border: 2px dashed #000; padding: 20px; max-width: 600px; margin: 0 auto; }
+                .header { text-align: center; border-bottom: 1px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+                .header h2 { margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+                .row-item { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 15px; }
+                .row-item .label { font-weight: bold; width: 40%; }
+                .row-item .val { width: 60%; text-align: left; }
+                .total { border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 8px 0; font-weight: bold; font-size: 18px; margin-top: 20px; }
+                .footer { text-align: center; margin-top: 40px; font-size: 12px; border-top: 1px dashed #ccc; padding-top: 10px; }
+                @media print { button { display: none; } }
+            </style>
+        </head>
+        <body>
+            <div class="receipt-box">
+                <div class="header">
+                    <h2>VOUCHER RECEIPT</h2>
+                    <p style="margin: 5px 0 0 0;">Official Record Slip</p>
+                </div>
+                
+                <div class="row-item"><span class="label">${headers[0]}:</span> <span class="val">${targetRowCells[0]}</span></div>
+                <div class="row-item"><span class="label">${headers[1]}:</span> <span class="val">${targetRowCells[1]}</span></div>
+                <div class="row-item"><span class="label">${headers[2]}:</span> <span class="val">${targetRowCells[2]}</span></div>
+                <div class="row-item"><span class="label">${headers[3]}:</span> <span class="val">${targetRowCells[3]}</span></div>
+                
+                <div class="row-item total">
+                    <span class="label">${headers[4]}:</span> <span class="val">${targetRowCells[4]}</span>
+                </div>
+                
+                <div class="row-item" style="margin-top: 15px;"><span class="label">${headers[5]}:</span> <span class="val">${targetRowCells[5]}</span></div>
+                
+                <div class="footer">
+                    <p>Thank you! System Generated Copy</p>
+                    <button onclick="window.print();" style="padding: 8px 15px; font-weight: bold; cursor: pointer; margin-top: 10px;">Click to Print / Save PDF</button>
+                </div>
+            </div>
+            <script>
+                // Page khulte hi auto print dialog box open karne ke liye
+                window.onload = function() { window.print(); }
+            <\/script>
+        </body>
+        </html>
+    `;
+    
+    printWindow.document.write(voucherHtml);
+    printWindow.document.close();
+}
+
     </script>
 </body>
 </html>
