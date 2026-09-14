@@ -208,14 +208,22 @@ function sendTableToSheet(tableId) {
             const rows = table.querySelectorAll("tr");
 
             // Table ki har row se data nikalna
-            rows.forEach(row => {
-                const cols = row.querySelectorAll("th, td");
-                const rowData = [];
-                cols.forEach(col => {
-                    rowData.push(col.innerText.trim());
-                });
-                rowsData.push(rowData);
-            });
+            rows.forEach((row, index) => {
+    // Agar index 0 hai (yaani pehli row/header), toh use skip kar do
+    if (index === 0) return; 
+
+    const cols = row.querySelectorAll("td"); // Header rows me 'th' hota hai, yahan sirf 'td' (data) lenge
+    const rowData = [];
+    
+    cols.forEach(col => {
+        rowData.push(col.innerText.trim());
+    });
+    
+    // Agar row khali nahi hai, tabhi data array me daalein
+    if (rowData.length > 0) {
+        rowsData.push(rowData);
+    }
+});
 
             // Google App Script ko bheja jaane wala data object
             const payload = {
