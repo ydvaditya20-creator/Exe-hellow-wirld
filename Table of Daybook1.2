@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Google Sheet Data Viewer</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; background-color: #f4f6f9; }
+        h2 { color: #333; text-transform: capitalize; border-bottom: 2px solid #007bff; padding-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #007bff; color: white; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .loading { font-size: 18px; color: #666; font-style: italic; }
+        .error { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h2 id="title">Loading Data...</h2>
+    <div id="table-container" class="loading">Google Sheet se data laya ja raha hai, kripya intezar karein...</div>
+
+    <script>
+        // URL se parameters nikalna (e.g., viewer.html?sheet=basahi)
+        const urlParams = new URLSearchParams(window.location.search);
+        const sheetName = urlParams.get('sheet');
+        
+        // YAHAN APNA GOOGLE APPS SCRIPT WEB APP URL DAALEIN
+        const webAppUrl = "YOUR_WEB_APP_URL_HERE"; 
+
+        if (!sheetName) {
+            document.getElementById('table-container').innerHTML = "<p class='error'>Error: URL me sheet ka naam nahi mila!</p>";
+        } else {
+            document.getElementById('title').innerText = sheetName + " Table Live Data";
+            fetchData();
+        }
+
+        function fetchData() {
+            // Apps Script se JSON data fetch karna
+            fetch(`${webAppUrl}?sheet=${sheetName}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length === 0 || data.status === "error") {
+                        document.getElementById('table-container').innerHTML = "<p class='error'>Is sheet me koi data nahi mila.</p>";
+                        return;
+                    }
+                    buildTable(data);
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    document.getElementById('table-container').innerHTML = "<p class='error'>Data load karne me dikkat aayi. Kripya check karein.</p>";
+                });
+        }
+
+        // Pure HTML Table banane wala function
+        function buildTable(data) {
+            let htmlTable = "<table>";
+            
+            // Header Row (Pehli row)
+            htmlTable += "<tr>";
+            data[0].forEach(headerText => {
+                htmlTable += `<th>${headerText}</th>`;
+            });
+            htmlTable += "</tr>";
+            
+            // Data Rows (Baki saari rows)
+            for (let i = 1; i < data.length; i++) {
+                htmlTable += "<tr>";
+                data[i].forEach(cellText => {
+                    htmlTable += `<td>${cellText}</td>`;
+                });
+                htmlTable += "</tr>";
+            }
+            
+            htmlTable += "</table>";
+            
+            // Container me table daalna
+            const container = document.getElementById('table-container');
+            container.classList.remove('loading');
+            container.innerHTML = htmlTable;
+        }
+    </script>
+</body>
+</html>
