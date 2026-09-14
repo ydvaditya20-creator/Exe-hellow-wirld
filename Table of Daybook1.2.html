@@ -77,14 +77,17 @@
                 }
                 
                 // Edit aur Delete Buttons
-                htmlTable += `
-                    <td>
-                        <div class="action-buttons">
-                            <button class="btn btn-edit" id="btn-edit-${i}" onclick="toggleEdit(${i}, '${voucherNo}')">✏️ Edit</button>
-                            <button class="btn btn-delete" id="btn-del-${i}" onclick="deleteVoucher('${voucherNo}')">🗑️ Delete</button>
-                        </div>
-                    </td>
-                `;
+                // Dynamic Buttons Injection (Pehle wale code me sirf Edit aur Delete tha, ab Print bhi hai)
+htmlTable += `
+    <td>
+        <div class="action-buttons">
+            <button class="btn btn-edit" id="btn-edit-${i}" onclick="toggleEdit(${i}, '${voucherNo}')">✏️ Edit</button>
+            <button class="btn btn-print" onclick="printVoucher('${voucherNo}')">🖨️ Print</button>
+            <button class="btn btn-delete" id="btn-del-${i}" onclick="deleteVoucher('${voucherNo}')">🗑️ Delete</button>
+        </div>
+    </td>
+`;
+
                 htmlTable += "</tr>";
             }
             
