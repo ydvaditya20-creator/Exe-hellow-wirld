@@ -28,3 +28,19 @@ function doPost(e) {
                          .setMimeType(ContentService.MimeType.JSON);
   }
 }
+function doGet(e) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var requestedSheet = e.parameter.sheet; 
+  
+  if (!requestedSheet) {
+    return ContentService.createTextOutput(JSON.stringify({"status": "error", "message": "Sheet name missing"}))
+                         .setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  var sheet = ss.getSheetByName(requestedSheet);
+  var data = sheet ? sheet.getDataRange().getValues() : [];
+  
+  // JSON Output bhejna
+  return ContentService.createTextOutput(JSON.stringify(data))
+                       .setMimeType(ContentService.MimeType.JSON);
+}
