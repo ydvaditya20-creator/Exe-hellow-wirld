@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Double Entry Voucher System</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #16a085;
+            --danger: #c0392b;
+            --success: #27ae60;
+            --light: #f8f9fa;
+            --warning: #f39c12;
+            --info: #2980b9;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #eef2f3; color: #333; }
+        .container { max-width: 1100px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2, h3 { color: var(--primary); border-bottom: 2px solid var(--primary); padding-bottom: 8px; }
+        .row { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 200px; display: flex; flex-direction: column; }
+        label { font-weight: 600; margin-bottom: 5px; font-size: 14px; }
+        input, select { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        input[readonly] { background-color: #e9ecef; cursor: not-allowed; }
+        
+        /* Dynamic Toggle Button Style */
+        .btn-toggle { background-color: var(--warning); color: white; font-size: 16px; padding: 12px; margin-bottom: 15px; width: 100%; text-transform: uppercase; letter-spacing: 1px; }
+        .btn-toggle.natwa { background-color: var(--info); }
+
+        /* Table Layouts */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; margin-bottom: 30px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; font-size: 14px; }
+        th { background-color: var(--primary); color: white; }
+        tr:nth-child(even) { background-color: var(--light); }
+        
+        /* Action UI Buttons */
+        .btn { padding: 10px 18px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s; }
+        .btn-add { background-color: var(--secondary); color: white; }
+        .btn-save { background-color: var(--success); color: white; width: 100%; margin-top: 15px; font-size: 16px; padding: 12px; }
+        .btn-edit { background-color: #f39c12; color: white; padding: 5px 10px; font-size: 12px; margin-right: 5px; }
+        .btn-delete { background-color: var(--danger); color: white; padding: 5px 10px; font-size: 12px; margin-right: 5px; }
+        .btn-print { background-color: #3498db; color: white; padding: 5px 10px; font-size: 12px; }
+        
+        .status-box { padding: 15px; border-radius: 4px; font-weight: bold; text-align: center; margin-top: 15px; font-size: 16px; }
+        .balanced { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .unbalanced { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        
+        #printArea { display: none; }
+        @media print {
+            body * { visibility: hidden; }
+            #printArea, #printArea * { visibility: visible; }
+            #printArea { display: block; position: absolute; left: 0; top: 0; width: 100%; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Double Entry Voucher System</h2>
+    
+    <!-- Classification Toggle Button -->
+    <button type="button" id="classificationBtn" class="btn btn-toggle" onclick="toggleClassification()">Basahi</button>
+
+    <!-- Voucher Meta Section -->
+    <div class="row">
+        <div class="form-group">
+            <label>Voucher Number (Auto)</label>
+            <input type="text" id="voucherNo" readonly>
+        </div>
+        <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="voucherDate" onchange="generateUniqueVoucherNo()">
+        </div>
+        <div class="form-group">
+            <label>Voucher Type</label>
+            <select id="voucherType">
+                <option value="Payment">Payment</option>
+                <option value="Receipt">Receipt</option>
+                <option value="Journal">Journal</option>
+                <option value="Contra">Contra</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="form-group">
+            <label>Narration (Type or Select)</label>
+            <input type="text" id="narration" list="narrationList" placeholder="Enter narration...">
+            <datalist id="narrationList">
+                <option value="Being cash paid for office expenses">
+                <option value="Being goods purchased on cash">
+                <option value="Being cash received from client">
+                <option value="Being bank interest received">
+                <option value="Being office rent paid via bank">
+            </datalist>
+        </div>
+    </div>
+
+    <h3>Voucher Entries</h3>
+    <button type="button" class="btn btn-add" onclick="addGridRow()">+ Add Line</button>
+    
+    <table id="entryTable">
+        <thead>
+            <tr>
+                <th style="width: 45%;">Account Head</th>
+                <th style="width: 20%;">Type</th>
+                <th style="width: 25%;">Amount (₹)</th>
+                <th style="width: 10%;">Action</th>
+            </tr>
+        </thead>
+        <tbody id="entrySubBody"></tbody>
+        <tfoot>
+            <tr style="font-weight: bold; background: #eef2f3;">
+                <td>Total</td>
+                <td style="text-align: right;">Debit: <span id="totalDebit">0</span></td>
+                <td colspan="2">Credit: <span id="totalCredit">0</span></td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div id="balanceStatus" class="status-box unbalanced">Unbalanced (Diff: 0)</div>
+    
+    <button type="button" class="btn btn-save" onclick="saveVoucher()">Save Voucher</button>
+
+    <!-- SEPARATE TABLES FOR REPORT -->
+    <h3 style="margin-top: 40px; color: var(--warning);">Basahi Voucher Register</h3>
+    <table id="basahiTable">
+        <thead>
+            <tr>
+                <th>Voucher No</th>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Accounts Involved</th>
+                <th>Total Amount</th>
+                <th>Narration</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="basahiBody"></tbody>
+    </table>
+
+    <h3 style="margin-top: 20px; color: var(--info);">Natwa Voucher Register</h3>
+    <table id="natwaTable">
+        <thead>
+            <tr>
+                <th>Voucher No</th>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Accounts Involved</th>
+                <th>Total Amount</th>
+                <th>Narration</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="natwaBody"></tbody>
+    </table>
+</div>
+
+<datalist id="accountList">
+    <option value="Cash Account">
+    <option value="HDFC Bank Account">
+    <option value="Sales Revenue Account">
+    <option value="Purchase Account">
+    <option value="Office Rent Expense">
+    <option value="Salary Expense">
+</datalist>
+
+<div id="printArea"></div>
+
+<script>  
+// Purane let savedVouchers = []; ki jagah ye line likhein
+let savedVouchers = JSON.parse(localStorage.getItem('vouchers')) || [];
+
+
+
+let editModeVoucherId = null;
+let currentClassification = "Basahi"; // Default state tracking
+
+window.onload = function() {
+    document.getElementById('voucherDate').valueAsDate = new Date();
+    generateUniqueVoucherNo();
+    addGridRow();
+    addGridRow();
+
+// Ise window.onload ke andar sabse niche jod dein
+renderHistoryTables();
+
+}
+
+// Toggle logic between Basahi and Natwa
+function toggleClassification() {
+    const btn = document.getElementById('classificationBtn');
+    if (currentClassification === "Basahi") {
+        currentClassification = "Natwa";
+        btn.innerText = "Natwa";
+        btn.classList.add('natwa');
+    } else {
+        currentClassification = "Basahi";
+        btn.innerText = "Basahi";
+        btn.classList.remove('natwa');
+    }
+}
+
+function generateUniqueVoucherNo() {
+    if(editModeVoucherId) return; 
+    const dateInput = document.getElementById('voucherDate').value.replace(/-/g, "");
+    const now = new Date();
+    const timePart = String(now.getHours()).padStart(2, '0') + 
+                     String(now.getMinutes()).padStart(2, '0') + 
+                     String(now.getSeconds()).padStart(2, '0') + 
+                     String(now.getMilliseconds()).padStart(3, '0');
+    document.getElementById('voucherNo').value = `V-${dateInput}-${timePart}`;
+}
+
+function addGridRow(acc = '', type = 'Debit', amt = '') {
+    const tbody = document.getElementById('entrySubBody');
+    const row = document.createElement('tr');
+    row.className = 'entry-row';
+    row.innerHTML = `
+        <td><input type="text" class="grid-acc" list="accountList" value="${acc}" placeholder="Type Account" style="width:90%"></td>
+        <td>
+            <select class="grid-type" onchange="calculateTotals()">
+                <option value="Debit" ${type === 'Debit' ? 'selected' : ''}>Debit</option>
+                <option value="Credit" ${type === 'Credit' ? 'selected' : ''}>Credit</option>
+            </select>
+        </td>
+        <td><input type="number" class="grid-amt" value="${amt}" oninput="calculateTotals()" placeholder="0.00" style="width:90%"></td>
+        <td><button type="button" class="btn btn-delete" onclick="removeGridRow(this)">X</button></td>
+    `;
+    tbody.appendChild(row);
+    calculateTotals();
+}
+
+function removeGridRow(btn) {
+    btn.parentNode.parentNode.remove();
+    calculateTotals();
+}
+
+function calculateTotals() {
+    let debitTotal = 0, creditTotal = 0;
+    document.querySelectorAll('.entry-row').forEach(row => {
+        const type = row.querySelector('.grid-type').value;
+        const amt = parseFloat(row.querySelector('.grid-amt').value) || 0;
+        if(type === 'Debit') debitTotal += amt; else creditTotal += amt;
+    });
+    document.getElementById('totalDebit').innerText = debitTotal.toFixed(2);
+    document.getElementById('totalCredit').innerText = creditTotal.toFixed(2);
+    const statusBox = document.getElementById('balanceStatus');
+    if(debitTotal === creditTotal && debitTotal > 0) {
+        statusBox.className = "status-box balanced";
+        statusBox.innerText = `Balanced (Total: ₹${debitTotal.toFixed(2)})`;
+        return true;
+    } else {
+        statusBox.className = "status-box unbalanced";
+        statusBox.innerText = `Unbalanced (Diff: ₹${Math.abs(debitTotal - creditTotal).toFixed(2)})`;
+        return false;
+    }
+}
+
+function saveVoucher() {
+    if(!calculateTotals()) {
+        alert("Error: Voucher unbalanced hai!");
+        return;
+    }
+
+    const vNo = document.getElementById('voucherNo').value;
+    const vDate = document.getElementById('voucherDate').value;
+    const vType = document.getElementById('voucherType').value;
+    const narration = document.getElementById('narration').value;
+
+    let items = [];
+    let accountSummary = [];
+    document.querySelectorAll('.entry-row').forEach(row => {
+        const acc = row.querySelector('.grid-acc').value;
+        const type = row.querySelector('.grid-type').value;
+        const amt = parseFloat(row.querySelector('.grid-amt').value) || 0;
+        if(acc && amt > 0) {
+            items.push({ account: acc, type: type, amount: amt });
+            accountSummary.push(`${acc} (${type}: ₹${amt})`);
+        }
+    });
+
+    if(items.length < 2) { return alert("Kam se kam do accounts enter karein."); }
+
+    const voucherData = {
+        id: editModeVoucherId || vNo,
+        vNo: vNo,
+        vDate: vDate,
+        vType: vType,
+        narration: narration,
+        items: items,
+        summary: accountSummary.join(', '),
+        total: parseFloat(document.getElementById('totalDebit').innerText),
+        classification: currentClassification // Saves under Basahi or Natwa
+    };
+
+    if(editModeVoucherId) {
+        const index = savedVouchers.findIndex(v => v.id === editModeVoucherId);
+        savedVouchers[index] = voucherData;
+        editModeVoucherId = null;
+    } else {
+        savedVouchers.push(voucherData);
+    }
+
+    document.getElementById('narration').value = '';
+    document.getElementById('entrySubBody').innerHTML = '';
+    addGridRow(); addGridRow();
+    generateUniqueVoucherNo();
+    renderHistoryTables();
+// Data save karne ke liye ise saveVoucher() ke end mein renderHistoryTables() ke niche dalein
+localStorage.setItem('vouchers', JSON.stringify(savedVouchers));
+
+
+}
+
+// Segmentation Engine rendering split tables
+function renderHistoryTables() {
+    const basahiBody = document.getElementById('basahiBody');
+    const natwaBody = document.getElementById('natwaBody');
+    basahiBody.innerHTML = '';
+    natwaBody.innerHTML = '';
+
+    savedVouchers.forEach(v => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><b>${v.vNo}</b></td>
+            <td>${v.vDate}</td>
+            <td><span style="padding:4px 8px; border-radius:4px; background:#ddd; font-weight:bold; font-size:12px;">${v.vType}</span></td>
+            <td style="color:#2c3e50; font-size:13px;">${v.summary}</td>
+            <td><b>₹${v.total.toFixed(2)}</b></td>
+            <td><i>${v.narration}</i></td>
+            <td>
+                <button class="btn btn-edit" onclick="editVoucher('${v.id}')">Edit</button>
+                <button class="btn btn-print" onclick="printVoucher('${v.id}')">Print</button>
+                <button class="btn btn-delete" onclick="deleteVoucher('${v.id}')">Delete</button>
+            </td>
+        `;
+        
+        if (v.classification === "Basahi") {
+            basahiBody.appendChild(tr);
+        } else {
+            natwaBody.appendChild(tr);
+        }
+    });
+}
+
+function deleteVoucher(id) {
+    if(confirm("Kya aap delete karna chahte hain?")) {
+        savedVouchers = savedVouchers.filter(v => v.id !== id);
+        renderHistoryTables();
+// Data delete hone ke baad storage update karne ke liye ise deleteVoucher() mein renderHistoryTables() ke niche dalein
+localStorage.setItem('vouchers', JSON.stringify(savedVouchers));
+
+
+    }
+}
+
+function editVoucher(id) {
+    const voucher = savedVouchers.find(v => v.id === id);
+    if(!voucher) return;
+
+    editModeVoucherId = voucher.id;
+    document.getElementById('voucherNo').value = voucher.vNo;
+    document.getElementById('voucherDate').value = voucher.vDate;
+    document.getElementById('voucherType').value = voucher.vType;
+    document.getElementById('narration').value = voucher.narration;
+    
+    currentClassification = voucher.classification;
+    const btn = document.getElementById('classificationBtn');
+    btn.innerText = currentClassification;
+    if(currentClassification === "Natwa") btn.classList.add('natwa'); else btn.classList.remove('natwa');
+
+    const tbody = document.getElementById('entrySubBody');
+    tbody.innerHTML = '';
+    voucher.items.forEach(item => addGridRow(item.account, item.type, item.amount));
+}
+
+function printVoucher(id) {
+    const voucher = savedVouchers.find(v => v.id === id);
+    if(!voucher) return;
+
+    let rowsHtml = '';
+    voucher.items.forEach(item => {
+        rowsHtml += `<tr><td style="border:1px solid #333; padding:8px;">${item.account}</td><td style="border:1px solid #333; padding:8px;">${item.type}</td><td style="border:1px solid #333; padding:8px; text-align:right;">₹${item.amount.toFixed(2)}</td></tr>`;
+    });
+
+    document.getElementById('printArea').innerHTML = `
+        <div style="border:2px solid #333; padding:20px; font-family:Arial, sans-serif;">
+            <div style="text-align:center; margin-bottom:20px;">
+                <h2>ACCOUNT VOUCHER (${voucher.classification.toUpperCase()})</h2>
+                <p style="font-weight:bold;">Type: ${voucher.vType}</p>
+            </div>
+            <hr>
+            <table style="width:100%; margin:15px 0; border:none;">
+                <tr style="border:none;"><td style="border:none;"><b>Voucher No:</b> ${voucher.vNo}</td><td style="text-align:right; border:none;"><b>Date:</b> ${voucher.vDate}</td></tr>
+            </table>
+            <table style="width:100%; border-collapse:collapse; margin-top:20px;">
+                <thead><tr style="background:#f2f2f2;"><th style="border:1px solid #333; padding:8px; text-align:left;">Account Particulars</th><th style="border:1px solid #333; padding:8px; text-align:left;">Dr / Cr</th><th style="border:1px solid #333; padding:8px; text-align:right;">Amount</th></tr></thead>
+                <tbody>${rowsHtml}<tr style="font-weight:bold;"><td colspan="2" style="border:1px solid #333; padding:8px; text-align:right;">Total Settlement Value:</td><td style="border:1px solid #333; padding:8px; text-align:right;">₹${voucher.total.toFixed(2)}</td></tr></tbody>
+            </table>
+            <p style="margin-top:20px;"><b>Narration:</b> <i>${voucher.narration || 'N/A'}</i></p>
+        </div>
+    `;
+    window.print();
+}
+
+
+</script>
+</body>
+</html>
