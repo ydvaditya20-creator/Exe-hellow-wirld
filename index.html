@@ -529,7 +529,7 @@ function editVoucher(id) {
 
     const tbody = document.getElementById('entrySubBody');
     tbody.innerHTML = '';
-    voucher.items.forEach(item => addGridRow(item.account, item.type, item.amount));
+    voucher.items.forEach(item => addGridRow(item.account, item.type, item.amount,item.lineNarration || ''));
 }
 
 	
