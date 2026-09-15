@@ -402,7 +402,7 @@ function renderHistoryTables() {
             <td><i>${v.narration}</i></td>
             <td>
                 <button class="btn btn-edit" onclick="editVoucher('${v.id}')">Edit</button>
-                <button class="btn btn-print" onclick="printVoucher('${v.id}')">Print</button>
+                <button class="btn btn-print" onclick="printVoucher(this)">Print</button>
                 <button class="btn btn-delete" onclick="deleteVoucher('${v.id}')">Delete</button>
             </td>
         `;
@@ -446,33 +446,220 @@ function editVoucher(id) {
     voucher.items.forEach(item => addGridRow(item.account, item.type, item.amount));
 }
 
-function printVoucher(id) {
-    const voucher = savedVouchers.find(v => v.id === id);
-    if(!voucher) return;
+function printVoucher(buttonElement) {
+    // 1. बटन की रो से डेटा कलेक्ट करना
+    var row = buttonElement.closest('tr');
+    var cells = row.getElementsByTagName('td');
+    
+    var vNo = cells[0].innerText.trim();
+    var vDate = cells[1].innerText.trim();
+    var vType = cells[2].innerText.trim(); 
+    var accountsInvolvedRaw = cells[3].innerText.trim();
+    var totalAmount = cells[4].innerText.trim().replace('₹', '');
+    var narration = cells[5].innerText.trim();
 
-    let rowsHtml = '';
-    voucher.items.forEach(item => {
-        rowsHtml += `<tr><td style="border:1px solid #333; padding:8px;">${item.account}</td><td style="border:1px solid #333; padding:8px;">${item.type}</td><td style="border:1px solid #333; padding:8px; text-align:right;">₹${item.amount.toFixed(2)}</td></tr>`;
-    });
+    // 2. वाउचर टाइप कंडीशन तय करना
+    var isJournal = vType.toLowerCase() === 'journal';
+    var voucherHeaderTitle = "Journal Voucher"; 
+    if (vType.toLowerCase().includes('payment')) {
+        voucherHeaderTitle = "Cash/Bank Payment Voucher";
+    } else if (vType.toLowerCase().includes('receipt')) {
+        voucherHeaderTitle = "Cash/Bank Receipt Voucher";
+    }
 
-    document.getElementById('printArea').innerHTML = `
-        <div style="border:2px solid #333; padding:20px; font-family:Arial, sans-serif;">
-            <div style="text-align:center; margin-bottom:20px;">
-                <h2>ACCOUNT VOUCHER (${voucher.classification.toUpperCase()})</h2>
-                <p style="font-weight:bold;">Type: ${voucher.vType}</p>
+    // 3. डेटा प्रोसेसिंग वेरिएबल्स
+    var accountsArray = accountsInvolvedRaw.split(',');
+    var tableHeaderHTML = "";
+    var tableBodyHTML = "";
+
+    if (isJournal) {
+        // जर्नल के लिए 6-कॉलम हेडर बनाना
+        tableHeaderHTML = `
+            <tr>
+                <th style="width: 8%;">Sl.No.</th>
+                <th style="width: 32%;">Head of Account (Dr)</th>
+                <th style="width: 10%;">Dr Amt</th>
+                <th style="width: 8%;">Sl.No.</th>
+                <th style="width: 32%;">Head of Account (Cr)</th>
+                <th style="width: 10%;">Cr Amt</th>
+            </tr>
+        `;
+
+        var drAccounts = [];
+        var crAccounts = [];
+
+        // डेबिट और क्रेडिट खातों को अलग-अलग एरे में छांटना
+        accountsArray.forEach(function(accountStr) {
+            accountStr = accountStr.trim();
+            var amtMatch = accountStr.match(/₹([0-9.,]+)/);
+            var amt = amtMatch ? amtMatch[1] : "";
+            var cleanName = accountStr.split('(')[0].trim();
+
+            if (accountStr.toLowerCase().includes('debit')) {
+                drAccounts.push({ name: cleanName, amount: amt });
+            } else if (accountStr.toLowerCase().includes('credit')) {
+                crAccounts.push({ name: cleanName, amount: amt });
+            }
+        });
+
+        var maxRows = Math.max(drAccounts.length, crAccounts.length);
+        for (var i = 0; i < maxRows; i++) {
+            var dr = drAccounts[i] || { name: "", amount: "" };
+            var cr = crAccounts[i] || { name: "", amount: "" };
+            var drSl = dr.name ? (i + 1) : "";
+            var crSl = cr.name ? (i + 1) : "";
+
+            tableBodyHTML += `
+                <tr>
+                    <td style="text-align: center;">${drSl}</td>
+                    <td>${dr.name}</td>
+                    <td style="text-align: right;">${dr.amount}</td>
+                    <td style="text-align: center;">${crSl}</td>
+                    <td>${cr.name}</td>
+                    <td style="text-align: right;">${cr.amount}</td>
+                </tr>
+            `;
+        }
+
+        tableBodyHTML += `
+            <tr class="total-row">
+                <td></td>
+                <td class="total-label" style="border: 1px solid #000 !important;">Total</td>
+                <td class="total-amount">${totalAmount}</td>
+                <td></td>
+                <td class="total-label" style="border: 1px solid #000 !important;">Total</td>
+                <td class="total-amount">${totalAmount}</td>
+            </tr>
+        `;
+    } else {
+        // पेमेंट और रिसीप्ट के लिए 4-कॉलम हेडर बनाना
+        tableHeaderHTML = `
+            <tr>
+                <th style="width: 8%;">Sl.No.</th>
+                <th style="width: 47%;">Particulars / Narration</th>
+                <th style="width: 25%;">Head of Accounts</th>
+                <th style="width: 20%;">Amount</th>
+            </tr>
+        `;
+
+        var finalAccountsHTML = "";
+        var serialNoHTML = "";
+        var itemCounter = 1;
+
+        accountsArray.forEach(function(accountStr) {
+            accountStr = accountStr.trim();
+            var isDebit = accountStr.toLowerCase().includes('debit');
+            var isCredit = accountStr.toLowerCase().includes('credit');
+            var cleanAccountName = accountStr.split('(')[0].trim();
+
+            if (vType.toLowerCase().includes('payment') && isCredit) {
+                finalAccountsHTML += `<div style="margin-bottom:8px;">${cleanAccountName}</div>`;
+                serialNoHTML += `<div style="margin-bottom:8px;">${itemCounter}</div>`;
+                itemCounter++;
+            } else if (vType.toLowerCase().includes('receipt') && isDebit) {
+                finalAccountsHTML += `<div style="margin-bottom:8px;">${cleanAccountName}</div>`;
+                serialNoHTML += `<div style="margin-bottom:8px;">${itemCounter}</div>`;
+                itemCounter++;
+            }
+        });
+
+        if (finalAccountsHTML === "") {
+            finalAccountsHTML = accountsInvolvedRaw;
+            serialNoHTML = "1";
+        }
+
+        tableBodyHTML = `
+            <tr>
+                <td style="text-align: center;">${serialNoHTML}</td>
+                <td>${narration}</td>
+                <td>${finalAccountsHTML}</td>
+                <td style="text-align: right;">${totalAmount}</td>
+            </tr>
+            <tr class="total-row">
+                <td></td>
+                <td></td>
+                <td class="total-label">Total</td>
+                <td class="total-amount">${totalAmount}</td>
+            </tr>
+        `;
+    }
+
+    var amountInWords = totalAmount + " Rupees Only"; 
+
+    // वाउचर का मुख्य HTML लेआउट ढांचा
+    var voucherHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            * { box-sizing: border-box; font-family: Arial, sans-serif; }
+            body { margin: 0; padding: 10px; background: #fff; }
+            .voucher-container { width: 100%; max-width: 800px; margin: 0 auto; background-color: #fffde9; border: 2px solid #000; padding: 15px; }
+            .header-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+            .logo-title { color: #d96b27; font-size: 24px; font-weight: bold; margin: 0; }
+            .logo-subtitle { font-size: 10px; font-weight: bold; color: #333; margin: 2px 0 0 0; }
+            .voucher-title-section { text-align: right; vertical-align: top; }
+            .voucher-title { font-size: 18px; font-weight: bold; text-transform: uppercase; margin: 0; }
+            .voucher-subtitle { font-size: 10px; color: #555; margin: 2px 0 0 0; }
+            .info-row { display: flex; justify-content: space-between; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 6px 10px; font-weight: bold; font-size: 13px; }
+            .main-table { width: 100%; border-collapse: collapse; margin-top: -1px; }
+            .main-table th { background-color: #cccbca; border: 1px solid #000; font-size: 11px; padding: 5px; text-transform: uppercase; }
+            .main-table td { border-left: 1px solid #000; border-right: 1px solid #000; border-bottom: 1px solid #000; vertical-align: top; padding: 8px; font-size: 13px; }
+            .main-table tbody tr { height: 140px; }
+            .total-row { height: auto !important; }
+            .total-row td { height: auto !important; padding: 6px 8px; font-weight: bold; }
+            .total-label { background-color: #cccbca; text-align: right; text-transform: uppercase; border: 1px solid #000 !important; }
+            .total-amount { text-align: right;background-color: #cccbca; border: 1px solid #000 !important; }
+            .words-section { border-left: 1px solid #000; border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 8px 10px; font-size: 12px; font-weight: bold; }
+            .signature-section { display: flex; width: 100%; margin-top: -1px; }
+            .sig-box { flex: 1; border-left: 1px solid #000; border-bottom: 1px solid #000; height: 60px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 5px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+            .sig-box:last-child { border-right: 1px solid #000; }
+            @media print { .voucher-container { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+        </style>
+    </head>
+    <body>
+        <div class="voucher-container">
+            <table class="header-table">
+                <tr>
+                    <td>
+                        <div class="logo-title">★ SHEMFORD</div>
+                    </td>
+                    <td class="voucher-title-section">
+                        <div class="voucher-title">${voucherHeaderTitle}</div>
+                    </td>
+                </tr>
+            </table>
+            <div class="info-row">
+                <div>DATE: ${vDate}</div>
+                <div>V.No. ${vNo}</div>
             </div>
-            <hr>
-            <table style="width:100%; margin:15px 0; border:none;">
-                <tr style="border:none;"><td style="border:none;"><b>Voucher No:</b> ${voucher.vNo}</td><td style="text-align:right; border:none;"><b>Date:</b> ${voucher.vDate}</td></tr>
+            <table class="main-table">
+                <thead>${tableHeaderHTML}</thead>
+                <tbody>${tableBodyHTML}</tbody>
             </table>
-            <table style="width:100%; border-collapse:collapse; margin-top:20px;">
-                <thead><tr style="background:#f2f2f2;"><th style="border:1px solid #333; padding:8px; text-align:left;">Account Particulars</th><th style="border:1px solid #333; padding:8px; text-align:left;">Dr / Cr</th><th style="border:1px solid #333; padding:8px; text-align:right;">Amount</th></tr></thead>
-                <tbody>${rowsHtml}<tr style="font-weight:bold;"><td colspan="2" style="border:1px solid #333; padding:8px; text-align:right;">Total Settlement Value:</td><td style="border:1px solid #333; padding:8px; text-align:right;">₹${voucher.total.toFixed(2)}</td></tr></tbody>
-            </table>
-            <p style="margin-top:20px;"><b>Narration:</b> <i>${voucher.narration || 'N/A'}</i></p>
+            ${isJournal ? `<div style="border-left: 1px solid #000; border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 6px 10px; font-size: 12px;"><b>Narration:</b> ${narration}</div>` : ''}
+            <div class="words-section">
+                AMOUNT'S (IN WORDS): <span style="font-style: italic; font-weight: normal; margin-left: 10px;">${amountInWords}</span>
+            </div>
+            ${isJournal ? `<div class="signature-section">
+                <div class="sig-box">Prepared By</div>
+                <div class="sig-box">Approved By</div>
+            </div>` : `<div class="signature-section">
+                <div class="sig-box">Prepared By</div>
+                <div class="sig-box">Payment By</div>
+								<div class="sig-box">Approved By</div>
+                <div class="sig-box">Received By</div>
+            </div>`}
         </div>
+    </body>
+    </html>
     `;
-    window.print();
+
+    var printWindow = window.open('', '_blank', 'height=600,width=800');
+    printWindow.document.write(voucherHtml);
+    printWindow.document.close();
+    
 }
 Const="https://script.google.com/macros/s/AKfycbzMLraZcirFbs-oOhgdwnXAoM3AYYNug-_Y5EAEZ9OIlEPGqAvW8CqeCPXXuty9h58W9w/exec"
 
