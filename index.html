@@ -446,7 +446,8 @@ function editVoucher(id) {
     voucher.items.forEach(item => addGridRow(item.account, item.type, item.amount));
 }
 
-function printVoucher(buttonElement) {
+	
+	function printVoucher(buttonElement) {
     // 1. बटन की रो से डेटा कलेक्ट करना
     var row = buttonElement.closest('tr');
     var cells = row.getElementsByTagName('td');
@@ -460,11 +461,11 @@ function printVoucher(buttonElement) {
 
     // 2. वाउचर टाइप कंडीशन तय करना
     var isJournal = vType.toLowerCase() === 'journal';
-    var voucherHeaderTitle = "Journal Voucher"; 
+    var voucherHeaderTitle = vType; 
     if (vType.toLowerCase().includes('payment')) {
-        voucherHeaderTitle = "Cash/Bank Payment Voucher";
+        voucherHeaderTitle = vType;
     } else if (vType.toLowerCase().includes('receipt')) {
-        voucherHeaderTitle = "Cash/Bank Receipt Voucher";
+        voucherHeaderTitle = vType;
     }
 
     // 3. डेटा प्रोसेसिंग वेरिएबल्स
@@ -473,7 +474,7 @@ function printVoucher(buttonElement) {
     var tableBodyHTML = "";
 
     if (isJournal) {
-        // जर्नल के लिए 6-कॉलम हेडर बनाना
+        // जर्नल के लिए 6-कॉलम हेडर
         tableHeaderHTML = `
             <tr>
                 <th style="width: 8%;">Sl.No.</th>
@@ -488,7 +489,6 @@ function printVoucher(buttonElement) {
         var drAccounts = [];
         var crAccounts = [];
 
-        // डेबिट और क्रेडिट खातों को अलग-अलग एरे में छांटना
         accountsArray.forEach(function(accountStr) {
             accountStr = accountStr.trim();
             var amtMatch = accountStr.match(/₹([0-9.,]+)/);
@@ -509,14 +509,15 @@ function printVoucher(buttonElement) {
             var drSl = dr.name ? (i + 1) : "";
             var crSl = cr.name ? (i + 1) : "";
 
+            // यहाँ 'class="journal-row"' लगाया है ताकि इसकी हाइट नॉर्मल रहे
             tableBodyHTML += `
-                <tr>
-                    <td style="text-align: center;">${drSl}</td>
-                    <td>${dr.name}</td>
-                    <td style="text-align: right;">${dr.amount}</td>
-                    <td style="text-align: center;">${crSl}</td>
-                    <td>${cr.name}</td>
-                    <td style="text-align: right;">${cr.amount}</td>
+                <tr class="journal-row">
+                    <td style="text-align: center; padding: 6px 4px;">${drSl}</td>
+                    <td style="padding: 6px 8px;">${dr.name}</td>
+                    <td style="text-align: right; padding: 6px 8px;">${dr.amount}</td>
+                    <td style="text-align: center; padding: 6px 4px;">${crSl}</td>
+                    <td style="padding: 6px 8px;">${cr.name}</td>
+                    <td style="text-align: right; padding: 6px 8px;">${cr.amount}</td>
                 </tr>
             `;
         }
@@ -531,34 +532,40 @@ function printVoucher(buttonElement) {
                 <td class="total-amount">${totalAmount}</td>
             </tr>
         `;
-    } else {
-        // पेमेंट और रिसीप्ट के लिए 4-कॉलम हेडर बनाना
+			} else {
+        // पेमेंट और रिसीप्ट के लिए 4-कॉलम हेडर
         tableHeaderHTML = `
-            <tr>
-                <th style="width: 8%;">Sl.No.</th>
-                <th style="width: 47%;">Particulars / Narration</th>
-                <th style="width: 25%;">Head of Accounts</th>
-                <th style="width: 20%;">Amount</th>
+            <tr style="font-size:20px">
+                <th style="width: 8%;font-size:13px">Sl.No.</th>
+                <th style="width: 42%;font-size:13px">Particulars / Narration</th>
+                <th style="width: 30%;font-size:13px">Head of Accounts</th>
+                <th style="width: 20%;font-size:13px">Amount</th>
             </tr>
         `;
 
         var finalAccountsHTML = "";
         var serialNoHTML = "";
+        var amountHTML = "";
         var itemCounter = 1;
 
         accountsArray.forEach(function(accountStr) {
             accountStr = accountStr.trim();
             var isDebit = accountStr.toLowerCase().includes('debit');
             var isCredit = accountStr.toLowerCase().includes('credit');
+            
+            var amtMatch = accountStr.match(/₹([0-9.,]+)/);
+            var individualAmt = amtMatch ? amtMatch[1] : "";
             var cleanAccountName = accountStr.split('(')[0].trim();
 
             if (vType.toLowerCase().includes('payment') && isCredit) {
-                finalAccountsHTML += `<div style="margin-bottom:8px;">${cleanAccountName}</div>`;
-                serialNoHTML += `<div style="margin-bottom:8px;">${itemCounter}</div>`;
+                finalAccountsHTML += `<div style="margin:10px 3px; min-height:18px;">${cleanAccountName}</div>`;
+                serialNoHTML += `<div style="margin:8px 3px; min-height:18px; text-align:center;">${itemCounter}</div>`;
+                amountHTML += `<div style="margin:8px 3px; min-height:18px; text-align:right;">${individualAmt}</div>`;
                 itemCounter++;
             } else if (vType.toLowerCase().includes('receipt') && isDebit) {
-                finalAccountsHTML += `<div style="margin-bottom:8px;">${cleanAccountName}</div>`;
-                serialNoHTML += `<div style="margin-bottom:8px;">${itemCounter}</div>`;
+                finalAccountsHTML += `<div style="margin:10px 3px; min-height:18px;">${cleanAccountName}</div>`;
+                serialNoHTML += `<div style="margin:8px 3px; min-height:18px; text-align:center;">${itemCounter}</div>`;
+                amountHTML += `<div style="margin:8px 3px; min-height:18px; text-align:right;">${individualAmt}</div>`;
                 itemCounter++;
             }
         });
@@ -566,14 +573,15 @@ function printVoucher(buttonElement) {
         if (finalAccountsHTML === "") {
             finalAccountsHTML = accountsInvolvedRaw;
             serialNoHTML = "1";
+            amountHTML = totalAmount;
         }
 
         tableBodyHTML = `
-            <tr>
-                <td style="text-align: center;">${serialNoHTML}</td>
-                <td>${narration}</td>
+            <tr class="standard-row">
+                <td style="padding: 8px 3px;">${serialNoHTML}</td>
+                <td style="padding: 15px 15px 2px 5px;">${narration}</td>
                 <td>${finalAccountsHTML}</td>
-                <td style="text-align: right;">${totalAmount}</td>
+                <td style="padding: 8px 5px;">${amountHTML}</td>
             </tr>
             <tr class="total-row">
                 <td></td>
@@ -586,7 +594,6 @@ function printVoucher(buttonElement) {
 
     var amountInWords = totalAmount + " Rupees Only"; 
 
-    // वाउचर का मुख्य HTML लेआउट ढांचा
     var voucherHtml = `
     <!DOCTYPE html>
     <html>
@@ -598,19 +605,23 @@ function printVoucher(buttonElement) {
             .voucher-container { width: 100%; max-width: 800px; margin: 0 auto; background-color: #fffde9; border: 2px solid #000; padding: 15px; }
             .header-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
             .logo-title { color: #d96b27; font-size: 24px; font-weight: bold; margin: 0; }
-            .logo-subtitle { font-size: 10px; font-weight: bold; color: #333; margin: 2px 0 0 0; }
             .voucher-title-section { text-align: right; vertical-align: top; }
             .voucher-title { font-size: 18px; font-weight: bold; text-transform: uppercase; margin: 0; }
-            .voucher-subtitle { font-size: 10px; color: #555; margin: 2px 0 0 0; }
             .info-row { display: flex; justify-content: space-between; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 6px 10px; font-weight: bold; font-size: 13px; }
             .main-table { width: 100%; border-collapse: collapse; margin-top: -1px; }
             .main-table th { background-color: #cccbca; border: 1px solid #000; font-size: 11px; padding: 5px; text-transform: uppercase; }
-            .main-table td { border-left: 1px solid #000; border-right: 1px solid #000; border-bottom: 1px solid #000; vertical-align: top; padding: 8px; font-size: 13px; }
-            .main-table tbody tr { height: 140px; }
+            .main-table td { border-left: 1px solid #000; border-right: 1px solid #000; border-bottom: 1px solid #000; vertical-align: top; }
+            
+            /* यहाँ हुआ बदलाव: पेमेंट/रिसीप्ट सिंगल रो को बड़ा स्पेस (160px) मिलेगा */
+            .main-table tbody tr.standard-row { height: 160px; }
+            
+            /* जर्नल की हर रो अपनी डेटा के हिसाब से छोटी और साफ-सुथरी (Auto) रहेगी */
+            .main-table tbody tr.journal-row { height: auto !important; }
+            
             .total-row { height: auto !important; }
-            .total-row td { height: auto !important; padding: 6px 8px; font-weight: bold; }
+            .total-row td { height: auto !important;background-color: #cccbca; padding: 6px 8px; font-weight: bold; }
             .total-label { background-color: #cccbca; text-align: right; text-transform: uppercase; border: 1px solid #000 !important; }
-            .total-amount { text-align: right;background-color: #cccbca; border: 1px solid #000 !important; }
+            .total-amount { text-align: right; border: 1px solid #000 !important; }
             .words-section { border-left: 1px solid #000; border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 8px 10px; font-size: 12px; font-weight: bold; }
             .signature-section { display: flex; width: 100%; margin-top: -1px; }
             .sig-box { flex: 1; border-left: 1px solid #000; border-bottom: 1px solid #000; height: 60px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 5px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
@@ -622,27 +633,23 @@ function printVoucher(buttonElement) {
         <div class="voucher-container">
             <table class="header-table">
                 <tr>
-                    <td>
-                        <div class="logo-title">★ SHEMFORD</div>
-                    </td>
-                    <td class="voucher-title-section">
-                        <div class="voucher-title">${voucherHeaderTitle}</div>
-                    </td>
+                    <td><div class="logo-title">★ SHEMFORD<sup>™</sup></div></td>
+                    <td class="voucher-title-section"><div class="voucher-title">${voucherHeaderTitle}</div></td>
                 </tr>
             </table>
             <div class="info-row">
-                <div>DATE: ${vDate}</div>
+                <div>DATE: ${"  "}${vDate}</div>
                 <div>V.No. ${vNo}</div>
             </div>
             <table class="main-table">
                 <thead>${tableHeaderHTML}</thead>
                 <tbody>${tableBodyHTML}</tbody>
             </table>
-            ${isJournal ? `<div style="border-left: 1px solid #000; border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 6px 10px; font-size: 12px;"><b>Narration:</b> ${narration}</div>` : ''}
+            ${isJournal ? `<div style="border-left: 1px solid #000; border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 6px 10px; font-size: 15px;font-weight: 150px;"><b>Narration:</b> ${narration}</div>` : ''}
             <div class="words-section">
-                AMOUNT'S (IN WORDS): <span style="font-style: italic; font-weight: normal; margin-left: 10px;">${amountInWords}</span>
+                AMOUNT'S (IN WORDS): <span style=" font-weight: 150px; margin-left: 10px;">${amountInWords}</span>
             </div>
-            ${isJournal ? `<div class="signature-section">
+						 ${isJournal ? `<div class="signature-section">
                 <div class="sig-box">Prepared By</div>
                 <div class="sig-box">Approved By</div>
             </div>` : `<div class="signature-section">
@@ -651,6 +658,7 @@ function printVoucher(buttonElement) {
 								<div class="sig-box">Approved By</div>
                 <div class="sig-box">Received By</div>
             </div>`}
+            
         </div>
     </body>
     </html>
@@ -659,7 +667,7 @@ function printVoucher(buttonElement) {
     var printWindow = window.open('', '_blank', 'height=600,width=800');
     printWindow.document.write(voucherHtml);
     printWindow.document.close();
-    
+   
 }
 Const="https://script.google.com/macros/s/AKfycbzMLraZcirFbs-oOhgdwnXAoM3AYYNug-_Y5EAEZ9OIlEPGqAvW8CqeCPXXuty9h58W9w/exec"
 
