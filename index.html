@@ -557,12 +557,12 @@ function editVoucher(id) {
             var individualAmt = amtMatch ? amtMatch[1] : "";
             var cleanAccountName = accountStr.split('(')[0].trim();
 
-            if (vType.toLowerCase().includes('payment') && isCredit) {
+            if (vType.toLowerCase().includes('payment') && isDebit) {
                 finalAccountsHTML += `<div style="margin:10px 3px; min-height:18px;">${cleanAccountName}</div>`;
                 serialNoHTML += `<div style="margin:8px 3px; min-height:18px; text-align:center;">${itemCounter}</div>`;
                 amountHTML += `<div style="margin:8px 3px; min-height:18px; text-align:right;">${individualAmt}</div>`;
                 itemCounter++;
-            } else if (vType.toLowerCase().includes('receipt') && isDebit) {
+            } else if (vType.toLowerCase().includes('receipt') && isCredit) {
                 finalAccountsHTML += `<div style="margin:10px 3px; min-height:18px;">${cleanAccountName}</div>`;
                 serialNoHTML += `<div style="margin:8px 3px; min-height:18px; text-align:center;">${itemCounter}</div>`;
                 amountHTML += `<div style="margin:8px 3px; min-height:18px; text-align:right;">${individualAmt}</div>`;
